@@ -89,22 +89,6 @@ class TakPiece(Enum):
     def get_capstone_piece_for_player(player: TakPlayer) -> 'TakPiece':
         return TakPiece.get_piece_for_player(TakPiece._capstone(), player)
 
-    def get_can_place_on_top(self, player: TakPlayer) -> List['TakPiece']:
-        flat = TakPiece.get_flat_piece_for_player(player)
-        standing = TakPiece.getget_standing_piece_for_player_piece_for_player(player)
-        if self.is_flat():
-            return [flat]
-        if self.is_standing() or self.is_capstone():
-            return [flat, standing]
-
-    def get_can_place_on_top_of(self, player: TakPlayer) -> List['TakPiece']:
-        flat = TakPiece.get_flat_piece_for_player(player)
-        standing = TakPiece.getget_standing_piece_for_player_piece_for_player(player)
-        if self.is_flat() or self.is_standing():
-            return [flat]
-        if self.is_capstone():
-            return [flat, standing]
-
     def type(self) -> str:
         if self.is_flat():
             return "flat"
@@ -131,4 +115,4 @@ class TakPiece(Enum):
             return "c"
 
     def __str__(self):
-        return f'{str(self.player()).lower()}_{self.type()}'
+        return f'{str(self.player().value).lower()}_{self.type()}'
