@@ -19,7 +19,11 @@ class TakBoard(object):
         self.board = [[PieceStack() for _ in range(board_size)] for _ in range(board_size)]
 
         self._positions_iterable = [(file, rank) for file in range(self.board_size) for rank in range(self.board_size)]
-        self._stacks_iterable = [self.get_stack(file, rank) for file, rank in self._positions_iterable]
+
+        self.vertical_road_start_positions = [(file, 0) for file in range(self.board_size)]
+        self.vertical_road_end_positions = [(file, self.board_size - 1) for file in range(self.board_size)]
+        self.horizontal_road_start_positions = [(0, rank) for rank in range(self.board_size)]
+        self.horizontal_road_end_positions = [(self.board_size - 1, rank) for rank in range(self.board_size)]
 
     def copy(self):
         """
@@ -72,16 +76,28 @@ class TakBoard(object):
         else:
             return self.get_stack(file, rank).controlled_by()
 
-    def is_position_controlled_by(self, file: int, rank: int, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
+    def is_position_controlled_by(
+            self,
+            file: int,
+            rank: int,
+            player: TakPlayer,
+            only_flat_pieces: bool = True,
+            only_road_pieces: bool = False
+    ) -> bool:
         """
         Returns whether the given position is controlled by the given player
         :param file: int
         :param rank: int
         :param player: TakPlayer
         :param only_flat_pieces: whether to only count positions with flat pieces
+        :param only_road_pieces: whether to only count positions with road pieces (flat or capstone)
         :return: bool
         """
-        return self.get_stack(file, rank).is_controlled_by(player, only_flat_pieces=only_flat_pieces)
+        return self.get_stack(file, rank).is_controlled_by(
+            player,
+            only_flat_pieces=only_flat_pieces,
+            only_road_pieces=only_road_pieces
+        )
 
     def get_empty_positions(self) -> List[Tuple[int, int]]:
         """
@@ -90,8 +106,12 @@ class TakBoard(object):
         """
         return [(file, rank) for file, rank in self._positions_iterable if self.is_position_empty(file, rank)]
 
-    def get_positions_controlled_by_player(self, player: TakPlayer, only_flat_pieces: bool = False) \
-            -> List[Tuple[int, int]]:
+    def get_positions_controlled_by_player(
+            self,
+            player: TakPlayer,
+            only_flat_pieces: bool = False,
+            only_road_pieces: bool = False
+    ) -> List[Tuple[int, int]]:
         """
         Returns a list of positions controlled by the given player
         :param player: a TakPlayer
@@ -100,7 +120,11 @@ class TakBoard(object):
         """
         return [
             (file, rank) for file, rank in self._positions_iterable
-            if self.is_position_controlled_by(file, rank, player, only_flat_pieces=only_flat_pieces)
+            if self.is_position_controlled_by(
+                file, rank,
+                player,
+                only_flat_pieces=only_flat_pieces, only_road_pieces=only_road_pieces
+            )
         ]
 
     def position_height(self, file: int, rank: int) -> int:
@@ -162,7 +186,7 @@ class TakBoard(object):
         :return: a numpy 3D matrix with shape (board_size, board_size, max_stack_height)
         """
 
-        max_height = max(1, max(stack.height() for stack in self._stacks_iterable))
+        max_height = max(1, max([self.get_stack(file, rank).height() for file, rank in self._positions_iterable]))
 
         board_matrix = np.zeros((self.board_size, self.board_size, max_height), dtype=np.int)
 
@@ -172,3 +196,12 @@ class TakBoard(object):
                 board_matrix[file, rank, i] = stack.get_at(i).value
 
         return board_matrix, max_height
+
+    def is_position_in_board(self, pos: Tuple[int, int]) -> bool:
+        """
+        Determines if the given position is in the board (or invalid)
+        :param pos: a position in (file, rank)
+        :return: True if the position is valid
+        """
+        file, rank = pos
+        return 0 <= file < self.board_size and 0 <= rank < self.board_size

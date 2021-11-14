@@ -48,6 +48,9 @@ class TakPiece(Enum):
     def is_capstone(self) -> bool:
         return self.abs_value() == TakPiece._capstone()
 
+    def is_road(self) -> bool:
+        return self.is_flat() or self.is_capstone()
+
     def can_place_on(self, other: 'TakPiece') -> bool:
         if self.is_flat() or self.is_standing():
             return other.is_flat()

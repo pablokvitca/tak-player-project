@@ -4,3 +4,4 @@ more-itertools
 matplotlib
 plotly
 gym
+tqdm

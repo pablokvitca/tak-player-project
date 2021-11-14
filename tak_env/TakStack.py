@@ -46,8 +46,18 @@ class PieceStack(object):
     def controlled_by(self) -> Optional[TakPlayer]:
         return self.top().player() if not self.is_empty() else None
 
-    def is_controlled_by(self, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
-        return self.controlled_by() == player and (not only_flat_pieces or self.top().is_flat())
+    def is_controlled_by(
+            self,
+            player: TakPlayer,
+            only_flat_pieces: bool = True,
+            only_road_pieces: bool = False
+    ) -> bool:
+        if only_road_pieces:
+            return self.controlled_by() == player and self.top().is_road()
+        elif only_flat_pieces:
+            return self.controlled_by() == player and self.top().is_flat()
+        else:
+            return self.controlled_by() == player
 
     def as_list(self) -> List[TakPiece]:
         return list(self.stack)
@@ -56,7 +66,7 @@ class PieceStack(object):
         return len(self.stack) == 0
 
     def height(self) -> int:
-        return len(self)
+        return len(self.stack)
 
     def valid_placement(self, piece: TakPiece) -> bool:
         return self.is_empty() or piece.can_place_on(self.top())

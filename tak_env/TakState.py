@@ -1,4 +1,7 @@
-from typing import List, Tuple
+from typing import List, Tuple, Set
+
+from more_itertools import flatten
+
 from tak_env.TakBoard import TakBoard
 from tak_env.TakPlayer import TakPlayer
 
@@ -105,10 +108,38 @@ class TakState(object):
         """
         Returns whether there is a path for the given player
         TODO: docs
+        TODO: tests!
         :param player:
         :return:
         """
-        return False  # TODO: implement properly
+        road_positions_controlled = self.controlled_road_spaces(player)
+        max_steps = len(road_positions_controlled)
+
+        def get_connected_positions(position: Tuple[int, int]) -> List[Tuple[int, int]]:
+            up = (position[0], position[1] + 1)
+            right = (position[0] + 1, position[1])
+            down = (position[0], position[1] - 1)
+            left = (position[0] - 1, position[1])
+            return [
+                pos
+                for pos in [up, right, down, left]
+                if self.board.is_position_in_board(pos) and pos in road_positions_controlled
+            ]
+
+        def has_path(start_positions: List[Tuple[int, int]], end_positions: List[Tuple[int, int]]) -> bool:
+            end_positions = set(end_positions)
+            for start_position in start_positions:
+                current_positions: Set[Tuple[int, int]] = {start_position}
+                for step in range(max_steps):
+                    if len(current_positions.intersection(end_positions)) > 0:
+                        return True
+                    current_positions = set(flatten([get_connected_positions(pos) for pos in current_positions]))
+            return False
+
+        vertical_path = has_path(self.board.vertical_road_start_positions, self.board.vertical_road_end_positions)
+        horizontal_path = has_path(self.board.horizontal_road_start_positions, self.board.horizontal_road_end_positions)
+
+        return vertical_path or horizontal_path
 
     def pieces_left_player(self, player: TakPlayer) -> bool:
         """
@@ -142,9 +173,17 @@ class TakState(object):
 
         :param player: the player to count for
         :param only_flat_pieces: (optional, True) whether to only count flat pieces
-        :return: a list of positions controlled b the player
+        :return: a list of positions controlled by the player
         """
         return self.board.get_positions_controlled_by_player(player, only_flat_pieces=only_flat_pieces)
+
+    def controlled_road_spaces(self, player: TakPlayer) -> List[Tuple[int, int]]:
+        """
+        Returns the list of positions controlled by the player with pieces that can build a road (flat or capstone)
+        :param player: the player to count for
+        :return: a list of positions controlled by the player
+        """
+        return self.board.get_positions_controlled_by_player(player, only_road_pieces=True)
 
     def copy(self) -> 'TakState':
         """

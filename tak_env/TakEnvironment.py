@@ -77,16 +77,29 @@ class TakEnvironment(Env):
 
         has_path = has_path_for_white and has_path_for_black
 
-        done = has_path or (not next_state.pieces_left() or not next_state.spaces_left())
+        has_pieces_left = next_state.pieces_left()
+        has_spaces_left = next_state.spaces_left()
+        done = has_path or not has_pieces_left or not has_spaces_left
 
         reward = 0.0
+        info = {}
         if done:
             winning_player = self.winning_player(current_player)
             reward = self.compute_score(current_player, winning_player)
+            info = {
+                "winning_player": winning_player,
+                "ended_with_path": has_path,
+                "ended_with_no_pieces_left": not has_pieces_left,
+                "ended_with_no_spaces_left": not has_spaces_left,
+                "white_pieces_available": next_state.white_pieces_available,
+                "white_capstone_available": next_state.white_capstone_available,
+                "black_pieces_available": next_state.black_pieces_available,
+                "black_capstone_available": next_state.black_capstone_available,
+            }
 
         self.state = next_state
 
-        return next_state, reward, done, {}
+        return next_state, reward, done, info
 
     def compute_score(self, current_player: TakPlayer, winning_player: Optional[TakPlayer]) -> float:
         """
