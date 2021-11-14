@@ -14,3 +14,6 @@ class TakPlayer(Enum):
             return TakPlayer.BLACK
         else:
             return TakPlayer.WHITE
+
+    def __str__(self) -> str:
+        return self.value
