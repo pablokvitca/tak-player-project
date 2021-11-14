@@ -13,6 +13,9 @@ class TakAction(object):
     def is_valid(self, state: TakState) -> bool:
         raise NotImplementedError("Method 'is_valid' not implemented")
 
+    def take(self, state: TakState, mutate: bool = True) -> TakState:
+        raise NotImplementedError("Method 'take' not implemented")
+
 
 class TakActionPlace(TakAction):
 
@@ -61,8 +64,16 @@ class TakActionPlace(TakAction):
         :param mutate: If true, mutates the state to take the action on
         :return: The resulting state
         """
-        next_state = state if mutate else state.copy()
+        next_state: TakState = state if mutate else state.copy()
         next_state.board.place_piece(self.position, self.piece)
+
+        if self.piece.is_capstone():
+            next_state.remove_capstone_for_player(next_state.current_player)
+        else:
+            next_state.remove_piece_for_player(next_state.current_player)
+
+        next_state.current_player = next_state.current_player.other()
+
         return next_state
 
 
@@ -176,5 +187,7 @@ class TakActionMove(TakAction):
                 # The push method will automatically flatten the piece if it is standing
                 # Since we assume the move is valid, no need to check the types pieces
                 drop_stack.push(picked_up_pieces.pop())
+
+        next_state.current_player = next_state.current_player.other()
 
         return next_state

@@ -67,15 +67,16 @@ class TakBoard(object):
         else:
             return self.get_stack(x, y).controlled_by()
 
-    def is_position_controlled_by(self, x: int, y: int, player: TakPlayer) -> bool:
+    def is_position_controlled_by(self, x: int, y: int, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
         """
         Returns whether the given position is controlled by the given player
         :param x: int
         :param y: int
         :param player: TakPlayer
+        :param only_flat_pieces: whether to only count positions with flat pieces
         :return: bool
         """
-        return self.get_stack(x, y).is_controlled_by(player)
+        return self.get_stack(x, y).is_controlled_by(player, only_flat_pieces=only_flat_pieces)
 
     def get_empty_positions(self) -> List[Tuple[int, int]]:
         """
@@ -84,13 +85,18 @@ class TakBoard(object):
         """
         return [(x, y) for (x, y) in self._positions_iterable if self.is_position_empty(x, y)]
 
-    def get_positions_controlled_by_player(self, player: TakPlayer) -> List[Tuple[int, int]]:
+    def get_positions_controlled_by_player(self, player: TakPlayer, only_flat_pieces: bool = False) \
+            -> List[Tuple[int, int]]:
         """
         Returns a list of positions controlled by the given player
         :param player: a TakPlayer
+        :param only_flat_pieces: whether to only return positions with flat pieces
         :return: List of (x, y) tuples
         """
-        return [(x, y) for (x, y) in self._positions_iterable if self.is_position_controlled_by(x, y, player)]
+        return [
+            (x, y) for (x, y) in self._positions_iterable
+            if self.is_position_controlled_by(x, y, player, only_flat_pieces=only_flat_pieces)
+        ]
 
     def position_height(self, x: int, y: int) -> int:
         """

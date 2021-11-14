@@ -155,6 +155,85 @@ class TakState(object):
         """
         return self.board_size
 
+    def remove_piece_for_player(self, player: TakPlayer) -> None:
+        """
+        Removes a piece for the given player
+        :param player:
+        :return:
+        """
+        if player == TakPlayer.WHITE:
+            if self.white_pieces_available > 0:
+                self.white_pieces_available -= 1
+            else:
+                raise ValueError(f"No pieces available for player {player}")
+        else:
+            if self.black_pieces_available > 0:
+                self.black_pieces_available -= 1
+            else:
+                raise ValueError(f"No pieces available for player {player}")
+
+    def remove_capstone_for_player(self, player: TakPlayer) -> None:
+        """
+        Removes a capstone for the given player
+        :param player:
+        :return:
+        """
+        if player == TakPlayer.WHITE:
+            if self.white_capstone_available:
+                self.white_capstone_available = False
+            else:
+                raise ValueError(f"No capstone available for player {player}")
+        else:
+            if self.black_capstone_available:
+                self.black_capstone_available = False
+            else:
+                raise ValueError(f"No capstone available for player {player}")
+
+    def has_path_for_player(self, player: TakPlayer) -> bool:
+        """
+        Returns whether there is a path for the given player
+        TODO: docs
+        :param player:
+        :return:
+        """
+        return False  # TODO: implement properly
+
+    def pieces_left_player(self, player: TakPlayer) -> bool:
+        """
+        Returns whether there are pieces left for the given player
+        :param player:
+        :return:
+        """
+        if player == TakPlayer.WHITE:
+            return self.white_pieces_available > 0 or self.white_capstone_available
+        else:
+            return self.black_pieces_available > 0 or self.black_capstone_available
+
+    def pieces_left(self) -> bool:
+        """
+        Returns whether both players have pieces left
+        :return: True if both players have pieces left
+        """
+        return self.pieces_left_player(TakPlayer.WHITE) and self.pieces_left_player(TakPlayer.BLACK)
+
+    def spaces_left(self) -> bool:
+        """
+        Returns whether there are any empty spaces left on the board
+        :return: True if there are any empty spaces left
+        """
+        return len(self.board.get_empty_positions()) > 0
+
+    def controlled_spaces(self, player: TakPlayer, only_flat_pieces: bool = True) -> List[Tuple[int, int]]:
+        """
+        Returns the list of positions controlled by the given player.
+        Defaults to only counting positions controlled by flat pieces
+
+        :param player: the player to count for
+        :param only_flat_pieces: (optional, True) whether to only count flat pieces
+        :return: a list of positions controlled b the player
+        """
+        return self.board.get_positions_controlled_by_player(player, only_flat_pieces=only_flat_pieces)
+
     def copy(self) -> 'TakState':
         """
         Returns a copy of this state

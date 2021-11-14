@@ -46,8 +46,8 @@ class PieceStack(object):
     def controlled_by(self) -> TakPlayer:
         return self.top().player()
 
-    def is_controlled_by(self, player: TakPlayer) -> bool:
-        return self.controlled_by() == player
+    def is_controlled_by(self, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
+        return self.controlled_by() == player and (not only_flat_pieces or self.top().is_flat())
 
     def as_list(self) -> List[TakPiece]:
         return list(self.stack)
