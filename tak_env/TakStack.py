@@ -68,6 +68,9 @@ class PieceStack(object):
     def top_view_str(self) -> str:
         return "_" if self.is_empty() else self.top().view_str()
 
+    def get_at(self, index: int) -> TakPiece:
+        return self.stack[index]
+
     def __str__(self) -> str:
         return str(self.stack)
 

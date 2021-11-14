@@ -1,9 +1,14 @@
 from typing import Optional
-from gym import Env, register
+
+import numpy as np
+import pandas as pd
+from gym import Env
 from tak_env.TakAction import TakAction
+from tak_env.TakPiece import TakPiece
 from tak_env.TakState import TakState
 from tak_env.TakBoard import TakBoard
 from tak_env.TakPlayer import TakPlayer
+import plotly.express as px
 
 
 class TakEnvironment(Env):
@@ -149,6 +154,85 @@ class TakEnvironment(Env):
 
         return self.state
 
+    def render_image(self) -> None:
+        """
+        Render the current state of the game as an image
+        Uses matplotlib to make a 3D plot of the board
+        """
+        board, max_stack_height = self.state.board.as_3d_matrix()
+
+        color_black = 'black'
+        black_flats = np.where(board == TakPiece.BLACK_FLAT.value)
+        black_standing = np.where(board == TakPiece.BLACK_STANDING.value)
+        black_capstone = np.where(board == TakPiece.BLACK_CAPSTONE.value)
+
+        color_white = 'white'
+        white_flats = np.where(board == TakPiece.WHITE_FLAT.value)
+        white_standing = np.where(board == TakPiece.WHITE_STANDING.value)
+        white_capstone = np.where(board == TakPiece.WHITE_CAPSTONE.value)
+
+        def add_to_df(df: pd.DataFrame, file, rank, stack_index, color, piece):
+            return df.append({
+                'file': file + 0.5,
+                'rank': rank + 0.5,
+                'stack_index': stack_index,
+                'color': color,
+                'piece': piece
+            }, ignore_index=True)
+
+        df = pd.DataFrame(columns=['file', 'rank', 'stack_index', 'color', 'piece'])
+
+        for file, rank, stack_index in zip(*black_flats):
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_flat')
+        for file, rank, stack_index in zip(*black_standing):
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_standing')
+        for file, rank, stack_index in zip(*black_capstone):
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_capstone')
+        for file, rank, stack_index in zip(*white_flats):
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_flat')
+        for file, rank, stack_index in zip(*white_standing):
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_standing')
+        for file, rank, stack_index in zip(*white_capstone):
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_capstone')
+
+        fig = px.scatter_3d(
+            df,
+            x='file', y='rank', z='stack_index',
+            color='color',
+            symbol='piece',
+            opacity=0.6,
+            size_max=1.0
+        )
+
+        fig.update_traces(marker={"size": 12})
+
+        z_ticks = max(10, max_stack_height)
+        fig.update_layout(
+            scene={
+                "xaxis": {"nticks": self.board_size,  "range": [0, self.board_size]},
+                "yaxis": {"nticks": self.board_size, "range": [0, self.board_size]},
+                "zaxis": {"nticks": z_ticks, "range": [0, z_ticks]}
+            })
+
+        fig.show()
+
+    def render_text(self) -> None:
+        """
+        Render the board in text mode
+        """
+        # TODO: implement render method
+        print("TAK ENVIRONMENT RENDER --- START")
+
+        print(f"Current player: {self.state.current_player}")
+        print(
+            f"WHITE: pieces available: {self.state.white_pieces_available}, capstone available: {self.state.white_capstone_available}")
+        print(
+            f"BLACK: pieces available: {self.state.black_pieces_available}, capstone available: {self.state.black_capstone_available}")
+
+        print(f"Board: \n{self.state.board}")
+
+        print("TAK ENVIRONMENT RENDER --- END")
+
     def render(self, mode="human") -> None:
         """
         Render the tak_env to the screen
@@ -156,16 +240,10 @@ class TakEnvironment(Env):
         :param mode:
         :return:
         """
-        # TODO: implement render method
-        print("TAK ENVIRONMENT RENDER --- START")
-
-        print(f"Current player: {self.state.current_player}")
-        print(f"WHITE: pieces available: {self.state.white_pieces_available}, capstone available: {self.state.white_capstone_available}")
-        print(f"BLACK: pieces available: {self.state.black_pieces_available}, capstone available: {self.state.black_capstone_available}")
-
-        print(f"Board: \n{self.state.board}")
-
-        print("TAK ENVIRONMENT RENDER --- END")
+        if mode == "human":
+            self.render_image()
+        if mode == "text":
+            self.render_text()
 
     @staticmethod
     def get_default_pieces(board_size) -> int:

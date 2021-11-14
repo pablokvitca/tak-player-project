@@ -1,2 +1,6 @@
-gym
+numpy
+pandas
 more-itertools
+matplotlib
+plotly
+gym

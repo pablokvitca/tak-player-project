@@ -1,5 +1,8 @@
 from typing import List, Tuple, Optional
 
+import numpy as np
+
+from tak_env import TakStack
 from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakStack import PieceStack
@@ -16,6 +19,7 @@ class TakBoard(object):
         self.board = [[PieceStack() for _ in range(board_size)] for _ in range(board_size)]
 
         self._positions_iterable = [(file, rank) for file in range(self.board_size) for rank in range(self.board_size)]
+        self._stacks_iterable = [self.get_stack(file, rank) for file, rank in self._positions_iterable]
 
     def copy(self):
         """
@@ -145,3 +149,26 @@ class TakBoard(object):
         ranks = '123456789'
         file, rank = position
         return files[file] + ranks[rank]
+
+    def as_3d_matrix(self) -> (np.ndarray, int):
+        """
+        Returns a 3D matrix representation of the board.
+
+        The values 1, 2, 3 represent a white piece of type flat, standing, and capstone, respectively.
+        The values -1, -2, -3 represent a black piece of type flat, standing, and capstone, respectively.
+        The value 0 represents an empty position. an empty position has all values 0.
+        All positions are "padded" with 0 to the height of the tallest stack on the board.
+
+        :return: a numpy 3D matrix with shape (board_size, board_size, max_stack_height)
+        """
+
+        max_height = max(1, max(stack.height() for stack in self._stacks_iterable))
+
+        board_matrix = np.zeros((self.board_size, self.board_size, max_height), dtype=np.int)
+
+        for file, rank in self._positions_iterable:
+            stack: TakStack = self.get_stack(file, rank)
+            for i in range(stack.height()):
+                board_matrix[file, rank, i] = stack.get_at(i).value
+
+        return board_matrix, max_height
