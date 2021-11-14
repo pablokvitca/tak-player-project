@@ -1,16 +1,39 @@
-# This is a sample Python script.
+from gym import register, make
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from TakPlayerAgent import TakPlayerAgent
+from tak_env.TakAction import TakActionPlace
+from tak_env.TakEnvironment import TakEnvironment
+from tak_env.TakPiece import TakPiece
+from tak_env.TakPlayer import TakPlayer
 
+# register(id=TakEnvironment.ENV_NAME, entry_point="tak_env:TakEnvironment")
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+# env = make(TakEnvironment.ENV_NAME, board_size=3)
+env = TakEnvironment(board_size=3)
 
+agent_white_player = TakPlayerAgent(TakPlayer.WHITE)
+agent_black_player = TakPlayerAgent(TakPlayer.BLACK)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+env.state.board.print_board_names()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# TEMPORARY: do 10 actions
+
+state = env.reset()
+env.render()
+
+for i in range(10):
+    action = agent_white_player.select_action(state)
+    state, reward, done, _ = env.step(action)
+    print(f"ACTION: {action} -> {reward}, {done}")
+    env.render()
+    if done:
+        break
+
+    action = agent_black_player.select_action(state)
+    state, reward, done, info = env.step(action)
+    print(f"ACTION: {action} -> {reward}, {done}")
+    env.render()
+    if done:
+        break
+
+env.close()

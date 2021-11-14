@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
@@ -10,7 +10,7 @@ class PieceStack(object):
     A stack of TakBoard objects.
     """
 
-    def __init__(self, stack: Iterable[TakPiece, ...] = ()):
+    def __init__(self, stack: Iterable[TakPiece] = ()):
         self.stack: deque[TakPiece] = deque(stack)
 
     def push(self, piece: TakPiece, ignore_check: bool = True) -> None:
@@ -43,8 +43,8 @@ class PieceStack(object):
     def top_n(self, n: int) -> List[TakPiece]:
         return list(self.stack[-n:])
 
-    def controlled_by(self) -> TakPlayer:
-        return self.top().player()
+    def controlled_by(self) -> Optional[TakPlayer]:
+        return self.top().player() if not self.is_empty() else None
 
     def is_controlled_by(self, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
         return self.controlled_by() == player and (not only_flat_pieces or self.top().is_flat())
@@ -64,6 +64,9 @@ class PieceStack(object):
     def flatten(self) -> None:
         if not self.is_empty() and self.top().is_standing():
             self.push(self.pop().flatten())
+
+    def top_view_str(self) -> str:
+        return "_" if self.is_empty() else self.top().view_str()
 
     def __str__(self) -> str:
         return str(self.stack)

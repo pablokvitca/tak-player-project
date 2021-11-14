@@ -12,6 +12,8 @@ class TakEnvironment(Env):
     TODO: docs
     """
 
+    ENV_NAME = "TakEnvironment-v0"
+
     def __init__(self,
                  board_size,
                  use_capstone: Optional[bool] = None,
@@ -58,7 +60,7 @@ class TakEnvironment(Env):
         :param mutate: whether to mutate the state or not
         :return: the resulting state, the reward, if the game is over, and the info
         """
-        if not self.state.is_valid_action(action):
+        if not action.is_valid(self.state):
             raise ValueError(f"Invalid action: {action}")
 
         current_player = self.state.current_player
@@ -76,6 +78,8 @@ class TakEnvironment(Env):
         if done:
             winning_player = self.winning_player(current_player)
             reward = self.compute_score(current_player, winning_player)
+
+        self.state = next_state
 
         return next_state, reward, done, {}
 
@@ -153,7 +157,15 @@ class TakEnvironment(Env):
         :return:
         """
         # TODO: implement render method
-        pass
+        print("TAK ENVIRONMENT RENDER --- START")
+
+        print(f"Current player: {self.state.current_player}")
+        print(f"WHITE: pieces available: {self.state.white_pieces_available}, capstone available: {self.state.white_capstone_available}")
+        print(f"BLACK: pieces available: {self.state.black_pieces_available}, capstone available: {self.state.black_capstone_available}")
+
+        print(f"Board: \n{self.state.board}")
+
+        print("TAK ENVIRONMENT RENDER --- END")
 
     @staticmethod
     def get_default_pieces(board_size) -> int:
@@ -174,10 +186,3 @@ class TakEnvironment(Env):
         :return:
         """
         return board_size > 4  # TODO: get from rulebook
-
-    @staticmethod
-    def register() -> None:
-        """
-        Registers this environment to GYM
-        """
-        register(id="TakEnvironment-v0", entry_point="env:TakEnvironment")

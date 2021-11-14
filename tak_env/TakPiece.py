@@ -14,11 +14,11 @@ class TakPiece(Enum):
 
     @staticmethod
     def _flat() -> int:
-        return 3
+        return 1
 
     @staticmethod
     def _standing() -> int:
-        return 3
+        return 2
 
     @staticmethod
     def _capstone() -> int:
@@ -113,5 +113,19 @@ class TakPiece(Enum):
     def player(self) -> TakPlayer:
         return TakPlayer.WHITE if self.value > 0 else TakPlayer.BLACK
 
+    def view_str(self) -> str:
+        if self == TakPiece.WHITE_FLAT:
+            return "F"
+        if self == TakPiece.WHITE_STANDING:
+            return "S"
+        if self == TakPiece.WHITE_CAPSTONE:
+            return "C"
+        if self == TakPiece.BLACK_FLAT:
+            return "f"
+        if self == TakPiece.BLACK_STANDING:
+            return "s"
+        if self == TakPiece.BLACK_CAPSTONE:
+            return "c"
+
     def __str__(self):
-        return f'{self.player()}_{self.type()}'
+        return f'{str(self.player()).lower()}_{self.type()}'

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Iterable, Optional
+from typing import List, Tuple, Optional
 
 from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
@@ -15,7 +15,7 @@ class TakBoard(object):
         self.board_size = board_size
         self.board = [[PieceStack() for _ in range(board_size)] for _ in range(board_size)]
 
-        self._positions_iterable = [(x, y) for x in range(self.board_size) for y in range(self.board_size)]
+        self._positions_iterable = [(file, rank) for file in range(self.board_size) for rank in range(self.board_size)]
 
     def copy(self):
         """
@@ -24,9 +24,9 @@ class TakBoard(object):
         """
         copied_board = TakBoard(self.board_size)
 
-        for x in range(self.board_size):
-            for y in range(self.board_size):
-                copied_board.board[x][y] = self.board[x][y].copy()
+        for file in range(self.board_size):
+            for rank in range(self.board_size):
+                copied_board.board[file][rank] = self.board[file][rank].copy()
 
         return copied_board
 
@@ -35,55 +35,56 @@ class TakBoard(object):
         Returns the total number of pieces on the board
         :return: int
         """
-        return sum(sum(len(stack) for stack in row) for row in self.board)
+        return sum(sum(stack.height() for stack in file) for file in self.board)
 
-    def get_stack(self, x: int, y: int) -> PieceStack:
+    def get_stack(self, file: int, rank: int) -> PieceStack:
         """
         Returns the stack at the given position
-        :param x: int
-        :param y: int
+        TODO: docs
+        :param file: int
+        :param rank: int
         :return: PieceStack
         """
-        return self.board[x][y]
+        return self.board[file][rank]
 
-    def is_position_empty(self, x: int, y: int) -> bool:
+    def is_position_empty(self, file: int, rank: int) -> bool:
         """
         Returns whether the given position is empty
-        :param x: int
-        :param y: int
+        :param file: int
+        :param rank: int
         :return: bool
         """
-        return self.get_stack(x, y).is_empty()
+        return self.get_stack(file, rank).is_empty()
 
-    def position_controlled_by(self, x: int, y: int) -> Optional[TakPlayer]:
+    def position_controlled_by(self, file: int, rank: int) -> Optional[TakPlayer]:
         """
         Returns the player that controls the given position (or None if the position is empty)
-        :param x: int
-        :param y: int
+        :param file: int
+        :param rank: int
         :return: TakPlayer or None
         """
-        if self.is_position_empty(x, y):
+        if self.is_position_empty(file, rank):
             return None
         else:
-            return self.get_stack(x, y).controlled_by()
+            return self.get_stack(file, rank).controlled_by()
 
-    def is_position_controlled_by(self, x: int, y: int, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
+    def is_position_controlled_by(self, file: int, rank: int, player: TakPlayer, only_flat_pieces: bool = True) -> bool:
         """
         Returns whether the given position is controlled by the given player
-        :param x: int
-        :param y: int
+        :param file: int
+        :param rank: int
         :param player: TakPlayer
         :param only_flat_pieces: whether to only count positions with flat pieces
         :return: bool
         """
-        return self.get_stack(x, y).is_controlled_by(player, only_flat_pieces=only_flat_pieces)
+        return self.get_stack(file, rank).is_controlled_by(player, only_flat_pieces=only_flat_pieces)
 
     def get_empty_positions(self) -> List[Tuple[int, int]]:
         """
         Returns a list of empty positions on the board
         :return: List of (x, y) tuples
         """
-        return [(x, y) for (x, y) in self._positions_iterable if self.is_position_empty(x, y)]
+        return [(file, rank) for file, rank in self._positions_iterable if self.is_position_empty(file, rank)]
 
     def get_positions_controlled_by_player(self, player: TakPlayer, only_flat_pieces: bool = False) \
             -> List[Tuple[int, int]]:
@@ -94,18 +95,18 @@ class TakBoard(object):
         :return: List of (x, y) tuples
         """
         return [
-            (x, y) for (x, y) in self._positions_iterable
-            if self.is_position_controlled_by(x, y, player, only_flat_pieces=only_flat_pieces)
+            (file, rank) for file, rank in self._positions_iterable
+            if self.is_position_controlled_by(file, rank, player, only_flat_pieces=only_flat_pieces)
         ]
 
-    def position_height(self, x: int, y: int) -> int:
+    def position_height(self, file: int, rank: int) -> int:
         """
         Returns the height of the stack at the given position
-        :param x: int
-        :param y: int
+        :param file: int
+        :param rank: int
         :return: int
         """
-        return self.get_stack(x, y).height()
+        return self.get_stack(file, rank).height()
 
     def place_piece(self, position: Tuple[int, int], piece: TakPiece) -> None:
         """
@@ -114,5 +115,33 @@ class TakBoard(object):
         :param position: the position to place the piece at
         :param piece: the piece to place
         """
-        x, y = position
-        self.get_stack(x, y).push(piece)
+        file, rank = position
+        self.get_stack(file, rank).push(piece)
+
+    def print_board_names(self) -> None:
+        """
+        Prints the names of each position in the board
+        """
+        print('\n'.join(
+            ' '.join(TakBoard.get_square_name((file, rank)) for file in range(self.board_size))
+            for rank in range(self.board_size - 1, -1, -1)
+        ))
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the board (only shows the top piece of each stack)
+        TODO: show all pieces?
+        :return: str
+        """
+
+        return '\n'.join([
+            ' '.join([self.get_stack(file, rank).top_view_str() for file in range(self.board_size)])
+            for rank in range(self.board_size - 1, -1, -1)
+        ])
+
+    @staticmethod
+    def get_square_name(position):
+        files = 'abcdefghi'
+        ranks = '123456789'
+        file, rank = position
+        return files[file] + ranks[rank]
