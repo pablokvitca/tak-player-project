@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Optional
 
 from more_itertools import flatten
 
@@ -116,11 +116,13 @@ class TakState(object):
         TODO: docs
         TODO: tests!
         :param player:
-        :param only_low_road:  TODO: implement options
-        :param only_high_road:  TODO: implement options
-        :param only_straight_road:  TODO: implement options
+        :param only_low_road:
+        :param only_high_road:
+        :param only_straight_road:
         :return:
         """
+        assert not (only_low_road and only_high_road), "Only accepts only_high_road or only_low_road, not both"
+
         road_positions_controlled = self.controlled_road_spaces(player)
         max_steps = len(road_positions_controlled)
 
@@ -128,28 +130,36 @@ class TakState(object):
         if max_steps < self.board_size:
             return False
 
-        def get_connected_positions(position: Tuple[int, int]) -> Set[Tuple[int, int]]:
-            up = (position[0], position[1] + 1)
-            right = (position[0] + 1, position[1])
-            down = (position[0], position[1] - 1)
-            left = (position[0] - 1, position[1])
+        def get_connected_positions(position: Tuple[int, int], allowed_dirs: str = 'URDL') -> Set[Tuple[int, int]]:
+            up = (position[0], position[1] + 1) if 'U' in allowed_dirs else None
+            right = (position[0] + 1, position[1]) if 'R' in allowed_dirs else None
+            down = (position[0], position[1] - 1) if 'D' in allowed_dirs else None
+            left = (position[0] - 1, position[1]) if 'L' in allowed_dirs else None
             return {
                 pos
                 for pos in [up, right, down, left]
-                if self.board.is_position_in_board(pos) and pos in road_positions_controlled
+                if (
+                        pos is not None  # None means not considering going in that direction
+                        and self.board.is_position_in_board(pos)  # Position must be in the board
+                        and (not only_low_road or self.board.position_height(pos[0], pos[1]) == 1) # only low road
+                        and (not only_high_road or self.board.position_height(pos[0], pos[1]) >= 1)  # only high road
+                        and pos in road_positions_controlled  # Position must be controlled by the player
+                )
             }
 
         def has_path(
                 start_positions: Set[Tuple[int, int]], end_positions: Set[Tuple[int, int]],
-                _max_steps: int, _step: int = 0
+                _max_steps: int, _step: int = 0,
+                allowed_dirs: Optional[str] = 'URDL',
         ) -> bool:
+            allowed_dirs = allowed_dirs if allowed_dirs is not None else 'URDL'
             for current_position in start_positions:
                 if current_position in end_positions:
                     return True
                 if _step > _max_steps:
                     break
                 if has_path(
-                        get_connected_positions(current_position), end_positions,
+                        get_connected_positions(current_position, allowed_dirs=allowed_dirs), end_positions,
                         _max_steps, _step=_step + 1
                 ):
                     return True
@@ -165,7 +175,13 @@ class TakState(object):
             if pos in road_positions_controlled
         }
 
-        if has_path(controlled_vertical_start_positions, controlled_vertical_end_positions, max_steps):
+        allowed_dirs_vertical = 'UD' if only_straight_road else None
+        if len(controlled_vertical_start_positions) > 0 and len(controlled_vertical_end_positions) and has_path(
+                controlled_vertical_start_positions,
+                controlled_vertical_end_positions,
+                max_steps,
+                allowed_dirs=allowed_dirs_vertical
+        ):
             return True
 
         controlled_horizontal_start_positions = {
@@ -178,7 +194,13 @@ class TakState(object):
             if pos in road_positions_controlled
         }
 
-        if has_path(controlled_horizontal_start_positions, controlled_horizontal_end_positions, max_steps):
+        allowed_dirs_horizontal = 'RL' if only_straight_road else None
+        if len(controlled_horizontal_start_positions) > 0 and len(controlled_horizontal_end_positions) and has_path(
+                controlled_horizontal_start_positions,
+                controlled_horizontal_end_positions,
+                max_steps,
+                allowed_dirs=allowed_dirs_horizontal
+        ):
             return True
 
         return False
