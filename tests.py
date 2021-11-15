@@ -1,15 +1,404 @@
 import unittest
-
 import numpy as np
-
+from tak_env.TakAction import TakAction, TakActionPlace, TakActionMoveDir, TakActionMove
 from tak_env.TakBoard import TakBoard
 from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakStack import PieceStack
+from tak_env.TakState import TakState
+from utils import partitions, ordered_partitions
 
 
 class TestTakEnvTakActionMethods(unittest.TestCase):
-    pass
+
+    def test_tak_action_init(self):
+        self.assertEqual(TakAction((0, 0)).position, (0, 0))
+        self.assertEqual(TakAction((1, 6)).position, (1, 6))
+
+
+class TestTakEnvTakActionPlaceMethods(unittest.TestCase):
+
+    def test_tak_action_place_init(self):
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).piece, TakPiece.WHITE_FLAT)
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.BLACK_FLAT).piece, TakPiece.BLACK_FLAT)
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.WHITE_STANDING).piece, TakPiece.WHITE_STANDING)
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.BLACK_STANDING).piece, TakPiece.BLACK_STANDING)
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.WHITE_CAPSTONE).piece, TakPiece.WHITE_CAPSTONE)
+        self.assertEqual(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE).piece, TakPiece.BLACK_CAPSTONE)
+
+    def test_tak_action_place_is_valid(self):
+        state = TakState(3, TakBoard(3), 5, 5, False, False, TakPlayer.WHITE)
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertTrue(TakActionPlace((0, 1), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 2), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((1, 1), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((2, 1), TakPiece.WHITE_CAPSTONE).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE).is_valid(state))
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.current_player = TakPlayer.BLACK
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 1), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 2), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((1, 1), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((2, 1), TakPiece.WHITE_CAPSTONE).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE).is_valid(state))
+        state.board.place_piece((3, 2), TakPiece.WHITE_FLAT)
+        state.current_player = TakPlayer.WHITE
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 1), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertTrue(TakActionPlace((0, 2), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((1, 1), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertTrue(TakActionPlace((2, 1), TakPiece.WHITE_CAPSTONE).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE).is_valid(state))
+
+        state = TakState(5, TakBoard(5), 11, 11, True, True, TakPlayer.BLACK)
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertTrue(TakActionPlace((0, 1), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertTrue(TakActionPlace((3, 2), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertTrue(TakActionPlace((1, 5), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertTrue(TakActionPlace((2, 1), TakPiece.WHITE_CAPSTONE).is_valid(state))
+        self.assertTrue(TakActionPlace((1, 0), TakPiece.BLACK_CAPSTONE).is_valid(state))
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((1, 1), TakPiece.WHITE_FLAT)
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.WHITE_CAPSTONE).is_valid(state))
+        self.assertFalse(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE).is_valid(state))
+
+        state = TakState(5, TakBoard(5), 0, 1, True, False, TakPlayer.WHITE)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((1, 1), TakPiece.WHITE_FLAT)
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertTrue(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        state.current_player = TakPlayer.BLACK
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertTrue(TakActionPlace((3, 3), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertTrue(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+
+        state = TakState(5, TakBoard(5), 0, 0, False, False, TakPlayer.WHITE)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((1, 1), TakPiece.WHITE_FLAT)
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        state.current_player = TakPlayer.BLACK
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_FLAT).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.WHITE_STANDING).is_valid(state))
+        self.assertFalse(TakActionPlace((3, 3), TakPiece.BLACK_STANDING).is_valid(state))
+
+    def test_tak_action_place_take(self):
+        state = TakState(5, TakBoard(5), 11, 10, True, True, TakPlayer.WHITE)
+        self.assertEqual(state.white_pieces_available, 11)
+        self.assertEqual(state.black_pieces_available, 10)
+        self.assertEqual(state.white_capstone_available, True)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.WHITE)
+        self.assertTrue(state.first_action())
+        action = TakActionPlace((0, 0), TakPiece.BLACK_FLAT)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.white_pieces_available, 11)
+        self.assertEqual(state.black_pieces_available, 9)
+        self.assertEqual(state.white_capstone_available, True)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.BLACK)
+        self.assertTrue(state.first_action())
+        action = TakActionPlace((1, 2), TakPiece.WHITE_FLAT)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.white_pieces_available, 10)
+        self.assertEqual(state.black_pieces_available, 9)
+        self.assertEqual(state.white_capstone_available, True)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.WHITE)
+        self.assertFalse(state.first_action())
+        action = TakActionPlace((2, 2), TakPiece.WHITE_FLAT)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.white_pieces_available, 9)
+        self.assertEqual(state.black_pieces_available, 9)
+        self.assertEqual(state.white_capstone_available, True)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.BLACK)
+        self.assertFalse(state.first_action())
+        action = TakActionPlace((2, 3), TakPiece.BLACK_STANDING)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 3).top(), TakPiece.BLACK_STANDING)
+        self.assertEqual(state.white_pieces_available, 9)
+        self.assertEqual(state.black_pieces_available, 8)
+        self.assertEqual(state.white_capstone_available, True)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.WHITE)
+        self.assertFalse(state.first_action())
+        action = TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 3).top(), TakPiece.BLACK_STANDING)
+        self.assertEqual(state.board.get_stack(3, 3).top(), TakPiece.WHITE_CAPSTONE)
+        self.assertEqual(state.white_pieces_available, 9)
+        self.assertEqual(state.black_pieces_available, 8)
+        self.assertEqual(state.white_capstone_available, False)
+        self.assertEqual(state.black_capstone_available, True)
+        self.assertEqual(state.current_player, TakPlayer.BLACK)
+        self.assertFalse(state.first_action())
+        action = TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 3).top(), TakPiece.BLACK_STANDING)
+        self.assertEqual(state.board.get_stack(3, 3).top(), TakPiece.WHITE_CAPSTONE)
+        self.assertEqual(state.board.get_stack(1, 1).top(), TakPiece.BLACK_CAPSTONE)
+        self.assertEqual(state.white_pieces_available, 9)
+        self.assertEqual(state.black_pieces_available, 8)
+        self.assertEqual(state.white_capstone_available, False)
+        self.assertEqual(state.black_capstone_available, False)
+        self.assertEqual(state.current_player, TakPlayer.WHITE)
+        self.assertFalse(state.first_action())
+        action = TakActionPlace((3, 0), TakPiece.WHITE_STANDING)
+        action.take(state)
+        self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
+        self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
+        self.assertEqual(state.board.get_stack(2, 3).top(), TakPiece.BLACK_STANDING)
+        self.assertEqual(state.board.get_stack(3, 3).top(), TakPiece.WHITE_CAPSTONE)
+        self.assertEqual(state.board.get_stack(1, 1).top(), TakPiece.BLACK_CAPSTONE)
+        self.assertEqual(state.board.get_stack(3, 0).top(), TakPiece.WHITE_STANDING)
+        self.assertEqual(state.white_pieces_available, 8)
+        self.assertEqual(state.black_pieces_available, 8)
+        self.assertEqual(state.white_capstone_available, False)
+        self.assertEqual(state.black_capstone_available, False)
+        self.assertEqual(state.current_player, TakPlayer.BLACK)
+        self.assertFalse(state.first_action())
+
+    def test_tak_action_place_str(self):
+        self.assertEqual(str(TakActionPlace((0, 0), TakPiece.WHITE_FLAT)), "Fa1")
+        self.assertEqual(str(TakActionPlace((3, 2), TakPiece.BLACK_FLAT)), "Fd3")
+        self.assertEqual(str(TakActionPlace((1, 1), TakPiece.WHITE_STANDING)), "Sb2")
+        self.assertEqual(str(TakActionPlace((0, 4), TakPiece.BLACK_STANDING)), "Sa5")
+        self.assertEqual(str(TakActionPlace((1, 1), TakPiece.WHITE_CAPSTONE)), "Cb2")
+        self.assertEqual(str(TakActionPlace((0, 4), TakPiece.BLACK_CAPSTONE)), "Ca5")
+
+    def test_tak_action_place_get_possible_place_actions(self):
+        state = TakState(5, TakBoard(5), 11, 10, True, True, TakPlayer.WHITE)
+        actual = TakActionPlace.get_possible_place_actions(state, TakPiece.BLACK_FLAT)
+        self.assertEqual(len(actual), 5 * 5)
+        self.assertEqual(len(set(actual)), 5 * 5)
+        self.assertTrue(all(action.piece == TakPiece.BLACK_FLAT for action in actual))
+
+        action = TakActionPlace((0, 0), TakPiece.BLACK_FLAT)
+        action.take(state)
+        actual = TakActionPlace.get_possible_place_actions(state, TakPiece.WHITE_FLAT)
+        self.assertEqual(len(actual), 5 * 5 - 1)
+        self.assertEqual(len(set(actual)), 5 * 5 - 1)
+        self.assertTrue(all(action.piece == TakPiece.WHITE_FLAT for action in actual))
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.WHITE_FLAT) not in actual)
+
+        action = TakActionPlace((1, 2), TakPiece.WHITE_FLAT)
+        action.take(state)
+        actual = TakActionPlace.get_possible_place_actions(state, TakPiece.WHITE_STANDING)
+        self.assertEqual(len(actual), 5 * 5 - 2)
+        self.assertEqual(len(set(actual)), 5 * 5 - 2)
+        self.assertTrue(all(action.piece == TakPiece.WHITE_STANDING for action in actual))
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.WHITE_STANDING) not in actual)
+        self.assertTrue(TakActionPlace((1, 2), TakPiece.WHITE_STANDING) not in actual)
+        actual = TakActionPlace.get_possible_place_actions(state, TakPiece.BLACK_CAPSTONE)
+        self.assertEqual(len(actual), 5 * 5 - 2)
+        self.assertEqual(len(set(actual)), 5 * 5 - 2)
+        self.assertTrue(all(action.piece == TakPiece.BLACK_CAPSTONE for action in actual))
+        self.assertTrue(TakActionPlace((0, 0), TakPiece.BLACK_CAPSTONE) not in actual)
+        self.assertTrue(TakActionPlace((1, 2), TakPiece.BLACK_CAPSTONE) not in actual)
+
+
+class TestTakEnvTakActionMoveDir(unittest.TestCase):
+
+    def test_tak_action_move_dir_render(self):
+        self.assertEqual(TakActionMoveDir.UP.render(), "↑")
+        self.assertEqual(TakActionMoveDir.RIGHT.render(), "→")
+        self.assertEqual(TakActionMoveDir.DOWN.render(), "↓")
+        self.assertEqual(TakActionMoveDir.LEFT.render(), "←")
+
+        self.assertEqual(TakActionMoveDir.UP.render(arrows="URDL"), "U")
+        self.assertEqual(TakActionMoveDir.RIGHT.render(arrows="URDL"), "R")
+        self.assertEqual(TakActionMoveDir.DOWN.render(arrows="URDL"), "D")
+        self.assertEqual(TakActionMoveDir.LEFT.render(arrows="URDL"), "L")
+
+    def test_tak_action_move_dir_get_delta(self):
+        self.assertEqual(TakActionMoveDir.UP.get_delta(), (0, 1))
+        self.assertEqual(TakActionMoveDir.RIGHT.get_delta(), (1, 0))
+        self.assertEqual(TakActionMoveDir.DOWN.get_delta(), (0, -1))
+        self.assertEqual(TakActionMoveDir.LEFT.get_delta(), (-1, 0))
+
+        self.assertEqual(TakActionMoveDir.UP.get_delta(distance=3), (0, 3))
+        self.assertEqual(TakActionMoveDir.RIGHT.get_delta(distance=3), (3, 0))
+        self.assertEqual(TakActionMoveDir.DOWN.get_delta(distance=3), (0, -3))
+        self.assertEqual(TakActionMoveDir.LEFT.get_delta(distance=3), (-3, 0))
+
+        self.assertEqual(TakActionMoveDir.UP.get_delta(distance=7), (0, 7))
+        self.assertEqual(TakActionMoveDir.RIGHT.get_delta(distance=7), (7, 0))
+        self.assertEqual(TakActionMoveDir.DOWN.get_delta(distance=7), (0, -7))
+        self.assertEqual(TakActionMoveDir.LEFT.get_delta(distance=7), (-7, 0))
+
+
+class TestTakEnvTakActionMoveMethods(unittest.TestCase):
+
+    def test_tak_action_move_init(self):
+        move_up_1 = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertEqual(move_up_1.position, (0, 0))
+        self.assertEqual(move_up_1.direction, TakActionMoveDir.UP)
+        self.assertEqual(move_up_1.drop_order, (1,))
+
+        move_right_11 = TakActionMove((1, 5), TakActionMoveDir.RIGHT, (1, 1))
+        self.assertEqual(move_right_11.position, (1, 5))
+        self.assertEqual(move_right_11.direction, TakActionMoveDir.RIGHT)
+        self.assertEqual(move_right_11.drop_order, (1, 1))
+
+        move_down_1121 = TakActionMove((1, 5), TakActionMoveDir.DOWN, (1, 1, 2, 1))
+        self.assertEqual(move_down_1121.position, (1, 5))
+        self.assertEqual(move_down_1121.direction, TakActionMoveDir.DOWN)
+        self.assertEqual(move_down_1121.drop_order, (1, 1, 2, 1))
+
+    def test_tak_action_move_is_valid(self):
+        state = TakState(3, TakBoard(3), 5, 5, False, False, TakPlayer.WHITE)
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertFalse(action.is_valid(state))
+        state = TakState(5, TakBoard(5), 11, 10, True, True, TakPlayer.WHITE)
+        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state)  # Current player is black
+        TakActionPlace((1, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is white
+        TakActionPlace((2, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is black
+        TakActionPlace((2, 3), TakPiece.BLACK_STANDING).take(state)  # Current player is white
+        TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE).take(state)  # Current player is black
+        TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE).take(state)  # Current player is white
+        TakActionPlace((3, 0), TakPiece.WHITE_STANDING).take(state)  # Current player is black
+
+        action = TakActionMove((2, 3), TakActionMoveDir.RIGHT, (1,))
+        self.assertFalse(action.is_valid(state))
+
+        action = TakActionMove((2, 3), TakActionMoveDir.UP, (1,))
+        self.assertTrue(action.is_valid(state))
+
+        action = TakActionMove((0, 0), TakActionMoveDir.DOWN, (1,))
+        self.assertFalse(action.is_valid(state))
+
+        action = TakActionMove((0, 0), TakActionMoveDir.LEFT, (1,))
+        self.assertFalse(action.is_valid(state))
+
+        action = TakActionMove((3, 3), TakActionMoveDir.LEFT, (1,))
+        self.assertFalse(action.is_valid(state))
+
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertTrue(action.is_valid(state))
+        action.take(state)  # Current player is white
+
+        action = TakActionMove((3, 3), TakActionMoveDir.LEFT, (1,))
+        self.assertTrue(action.is_valid(state))
+
+        TakActionPlace((4, 4), TakPiece.WHITE_STANDING).take(state)  # Current player is black
+
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (1, 1, 1))
+        self.assertFalse(action.is_valid(state))
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        state.board.place_piece((0, 0), TakPiece.BLACK_FLAT)
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (1, 1, 1))
+        self.assertTrue(action.is_valid(state))
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (6, ))
+        self.assertFalse(action.is_valid(state))
+        action = TakActionMove((0, 0), TakActionMoveDir.UP, (1, 4, 1))
+        self.assertFalse(action.is_valid(state))
+
+        TakActionPlace((0, 4), TakPiece.BLACK_FLAT).take(state)  # Current player is white
+        action = TakActionMove((4, 4), TakActionMoveDir.UP, (1,))
+        self.assertFalse(action.is_valid(state))
+        action = TakActionMove((4, 4), TakActionMoveDir.RIGHT, (1,))
+        self.assertFalse(action.is_valid(state))
+        action = TakActionMove((4, 4), TakActionMoveDir.DOWN, (1,))
+        self.assertTrue(action.is_valid(state))
+        action = TakActionMove((4, 4), TakActionMoveDir.LEFT, (1,))
+        self.assertTrue(action.is_valid(state))
+
+        # TODO: test flattening validity check fail for flat and for standing
+        # TODO: test flattening validity check fail for capstone not moving alone
+
+    def test_tak_action_move_take(self):
+        pass  # TODO: test
+
+    def test_tak_action_move_get_ending_position(self):
+        move_up_1 = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertEqual(move_up_1.get_ending_position(), (0, 1))
+        move_right_11 = TakActionMove((1, 5), TakActionMoveDir.RIGHT, (1, 1))
+        self.assertEqual(move_right_11.get_ending_position(), (3, 5))
+        move_down_1121 = TakActionMove((1, 5), TakActionMoveDir.DOWN, (1, 1, 2, 1))
+        self.assertEqual(move_down_1121.get_ending_position(), (1, 1))
+
+    def test_tak_action_move_pick_up_count(self):
+        move_up_1 = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertEqual(move_up_1.pick_up_count(), 1)
+        move_right_11 = TakActionMove((1, 5), TakActionMoveDir.RIGHT, (1, 1))
+        self.assertEqual(move_right_11.pick_up_count(), 2)
+        move_down_1121 = TakActionMove((1, 5), TakActionMoveDir.DOWN, (1, 1, 2, 1))
+        self.assertEqual(move_down_1121.pick_up_count(), 5)
+
+    def test_tak_action_move_str(self):
+        move_up_1 = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
+        self.assertEqual(str(move_up_1), "1a1↑1")
+        move_right_11 = TakActionMove((1, 5), TakActionMoveDir.RIGHT, (1, 1))
+        self.assertEqual(str(move_right_11), "2b6→11")
+        move_down_1121 = TakActionMove((1, 5), TakActionMoveDir.DOWN, (1, 1, 2, 1))
+        self.assertEqual(str(move_down_1121), "5b6↓1121")
+
+    def test_tak_action_move_get_possible_move_actions(self):
+        pass  # TODO: test
+
+    def test_tak_action_move_get_possible_move_actions_for_position(self):
+        pass  # TODO: test
+
+    def test_tak_action_move_get_possible_drop_orders(self):
+        # See test for ordered_partitions util
+        self.assertEqual(1, len(set(TakActionMove.get_possible_drop_orders(1))))
+        self.assertEqual(2, len(set(TakActionMove.get_possible_drop_orders(2))))
+        self.assertEqual(4, len(set(TakActionMove.get_possible_drop_orders(3))))
+        self.assertEqual(8, len(set(TakActionMove.get_possible_drop_orders(4))))
+        self.assertEqual(16, len(set(TakActionMove.get_possible_drop_orders(5))))
+        self.assertEqual(32, len(set(TakActionMove.get_possible_drop_orders(6))))
+        self.assertEqual(64, len(set(TakActionMove.get_possible_drop_orders(7))))
+        self.assertEqual(128, len(set(TakActionMove.get_possible_drop_orders(8))))
+        self.assertEqual(256, len(set(TakActionMove.get_possible_drop_orders(9))))
+        self.assertEqual(512, len(set(TakActionMove.get_possible_drop_orders(10))))
+        self.assertEqual(1024, len(set(TakActionMove.get_possible_drop_orders(11))))
+        # self.assertEqual(2**19, len(set(TakActionMove.get_possible_drop_orders(20))))
+
+        # Wow, the count is 2^(n-1) !
 
 
 class TestTakEnvTakBoardMethods(unittest.TestCase):
@@ -805,6 +1194,56 @@ class TestTakEnvTakStackMethods(unittest.TestCase):
 
 class TestTakEnvTakStateMethods(unittest.TestCase):
     pass
+
+
+class TestUtils(unittest.TestCase):
+
+    def test_partitions(self):
+        self.assertEqual({(1,)}, set(partitions(1)))
+
+        self.assertEqual({(2,), (1, 1)}, set(partitions(2)))
+
+        self.assertEqual({(3,), (2, 1), (1, 1, 1)}, set(partitions(3)))
+
+        self.assertEqual({(4,), (3, 1), (2, 2), (2, 1, 1), (1, 1, 1, 1)}, set(partitions(4)))
+
+        self.assertEqual(
+            {(5,), (4, 1), (3, 2), (3, 1, 1), (2, 2, 1), (2, 1, 1, 1), (1, 1, 1, 1, 1)},
+            set(partitions(5))
+        )
+
+        # See https://oeis.org/A000041
+        self.assertEqual(11, len(set(partitions(6))))
+        self.assertEqual(15, len(set(partitions(7))))
+        self.assertEqual(30, len(set(partitions(8))))
+        self.assertEqual(42, len(set(partitions(9))))
+
+    def test_ordered_partitions(self):
+        self.assertEqual({(1,)}, set(ordered_partitions(1)))
+
+        self.assertEqual({(2,), (1, 1)}, set(ordered_partitions(2)))
+
+        self.assertEqual({(3,), (2, 1), (1, 2), (1, 1, 1)}, set(ordered_partitions(3)))
+
+        self.assertEqual(
+            {(4,), (3, 1), (1, 3), (2, 2), (2, 1, 1), (1, 2, 1), (1, 1, 2), (1, 1, 1, 1)},
+            set(ordered_partitions(4))
+        )
+
+        self.assertEqual(
+            {
+                (5,),
+                (4, 1), (1, 4),
+                (3, 2), (2, 3),
+                (3, 1, 1), (1, 3, 1), (1, 1, 3),
+                (2, 2, 1), (2, 1, 2), (1, 2, 2),
+                (2, 1, 1, 1), (1, 2, 1, 1), (1, 1, 2, 1), (1, 1, 1, 2),
+                (1, 1, 1, 1, 1)
+            },
+            set(ordered_partitions(5))
+        )
+
+        # Fun fact, apparently the count of ordered partitions of 2^(n-1)
 
 
 if __name__ == '__main__':
