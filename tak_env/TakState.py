@@ -166,16 +166,15 @@ class TakState(object):
         """
         return len(self.board.get_empty_positions()) > 0
 
-    def controlled_spaces(self, player: TakPlayer, only_flat_pieces: bool = True) -> List[Tuple[int, int]]:
+    def controlled_flat_spaces(self, player: TakPlayer) -> List[Tuple[int, int]]:
         """
         Returns the list of positions controlled by the given player.
         Defaults to only counting positions controlled by flat pieces
 
         :param player: the player to count for
-        :param only_flat_pieces: (optional, True) whether to only count flat pieces
         :return: a list of positions controlled by the player
         """
-        return self.board.get_positions_controlled_by_player(player, only_flat_pieces=only_flat_pieces)
+        return self.board.get_positions_controlled_by_player(player, only_flat_pieces=True)
 
     def controlled_road_spaces(self, player: TakPlayer) -> List[Tuple[int, int]]:
         """

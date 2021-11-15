@@ -1,10 +1,7 @@
-from gym import register, make
 from tqdm import trange
 
 from TakPlayerAgent import TakPlayerAgent
-from tak_env.TakAction import TakActionPlace
 from tak_env.TakEnvironment import TakEnvironment
-from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
 
 # register(id=TakEnvironment.ENV_NAME, entry_point="tak_env:TakEnvironment")
@@ -53,8 +50,8 @@ for _ in trange(1000):
         Ended with path: {info['ended_with_path']}
         Ended with no pieces left: {info['ended_with_no_pieces_left']}
         Ended with no spaces left: {info['ended_with_no_spaces_left']}
-        WHITE: Remaining Pieces: {info['white_pieces_available']}. Remaining Capstone: {info['white_capstone_available']}
-        BLACK: Remaining Pieces: {info['black_pieces_available']}. Remaining Capstone: {info['black_capstone_available']}
+        WHITE: Remaining Pieces: {info['white_pieces_available']} Remaining Capstone: {info['white_capstone_available']}
+        BLACK: Remaining Pieces: {info['black_pieces_available']} Remaining Capstone: {info['black_capstone_available']}
     """)
 
     if info['ended_with_path']:

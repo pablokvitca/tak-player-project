@@ -31,7 +31,7 @@ class PieceStack(object):
 
     def pop(self) -> TakPiece:
         if self.is_empty():
-            raise ValueError("Cannot move from empty position")
+            raise ValueError("Cannot pop from empty position")
         return self.stack.pop()
 
     def pop_many(self, n: int) -> List[TakPiece]:
@@ -41,7 +41,7 @@ class PieceStack(object):
         return self.stack[-1]
 
     def top_n(self, n: int) -> List[TakPiece]:
-        return list(self.stack[-n:])
+        return list([self.stack[i] for i in range(max(0, self.height() - n), self.height())])
 
     def controlled_by(self) -> Optional[TakPlayer]:
         return self.top().player() if not self.is_empty() else None
@@ -49,7 +49,7 @@ class PieceStack(object):
     def is_controlled_by(
             self,
             player: TakPlayer,
-            only_flat_pieces: bool = True,
+            only_flat_pieces: bool = False,
             only_road_pieces: bool = False
     ) -> bool:
         if only_road_pieces:
@@ -89,6 +89,9 @@ class PieceStack(object):
 
     def __len__(self) -> int:
         return len(self.stack)
+
+    def __eq__(self, other):
+        return self.stack == other.stack
 
     def copy(self) -> 'PieceStack':
         return PieceStack(self.as_list())

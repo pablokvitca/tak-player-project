@@ -81,7 +81,7 @@ class TakBoard(object):
             file: int,
             rank: int,
             player: TakPlayer,
-            only_flat_pieces: bool = True,
+            only_flat_pieces: bool = False,
             only_road_pieces: bool = False
     ) -> bool:
         """
@@ -116,6 +116,7 @@ class TakBoard(object):
         Returns a list of positions controlled by the given player
         :param player: a TakPlayer
         :param only_flat_pieces: whether to only return positions with flat pieces
+        :param only_road_pieces: whether to only return positions with road pieces (flat or capstone)
         :return: List of (x, y) tuples
         """
         return [

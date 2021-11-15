@@ -34,8 +34,10 @@ class TakEnvironment(Env):
         :param init_player:
         """
         self.board_size: int = board_size
-        self.use_capstone: bool = use_capstone if use_capstone is not None else TakEnvironment.default_capstone(board_size)
-        self.init_pieces: int = init_pieces if init_pieces is not None else TakEnvironment.get_default_pieces(board_size)
+        self.use_capstone: bool = use_capstone if use_capstone is not None \
+            else TakEnvironment.default_capstone(board_size)
+        self.init_pieces: int = init_pieces if init_pieces is not None \
+            else TakEnvironment.get_default_pieces(board_size)
         self.init_player: TakPlayer = init_player
 
         self.state: TakState = self.reset()
@@ -138,8 +140,8 @@ class TakEnvironment(Env):
             return TakPlayer.BLACK
 
         # Secondary condition:
-        flat_controlled_spaces_white: int = len(self.state.controlled_spaces(TakPlayer.WHITE))
-        flat_controlled_spaces_black: int = len(self.state.controlled_spaces(TakPlayer.BLACK))
+        flat_controlled_spaces_white: int = len(self.state.controlled_flat_spaces(TakPlayer.WHITE))
+        flat_controlled_spaces_black: int = len(self.state.controlled_flat_spaces(TakPlayer.BLACK))
 
         if flat_controlled_spaces_white > flat_controlled_spaces_black:
             return TakPlayer.WHITE
@@ -237,10 +239,8 @@ class TakEnvironment(Env):
         print("TAK ENVIRONMENT RENDER --- START")
 
         print(f"Current player: {self.state.current_player}")
-        print(
-            f"WHITE: pieces available: {self.state.white_pieces_available}, capstone available: {self.state.white_capstone_available}")
-        print(
-            f"BLACK: pieces available: {self.state.black_pieces_available}, capstone available: {self.state.black_capstone_available}")
+        print(f"WHITE: pieces: {self.state.white_pieces_available}, capstone: {self.state.white_capstone_available}")
+        print(f"BLACK: pieces: {self.state.black_pieces_available}, capstone: {self.state.black_capstone_available}")
 
         print(f"Board: \n{self.state.board}")
 

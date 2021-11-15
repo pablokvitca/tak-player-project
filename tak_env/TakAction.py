@@ -58,7 +58,7 @@ class TakAction(object):
         :return: List[TakAction]
         """
 
-        from_file, from_rank= from_position
+        from_file, from_rank = from_position
         max_pickup_size = min(state.board.position_height(from_file, from_rank), state.max_pick_up_number())
         if max_pickup_size == 0:
             return []
@@ -214,7 +214,10 @@ class TakActionMove(TakAction):
             return False
 
         # Can only move if the position is controlled by the current player
-        if not state.board.is_position_controlled_by(from_file, from_rank, state.current_player):
+        if not state.board.is_position_controlled_by(
+                from_file, from_rank, state.current_player,
+                only_flat_pieces=False, only_road_pieces=False
+        ):
             return False
 
         # Can only move if the total number of picked up pieces is less than the game's max pick up number
