@@ -186,35 +186,36 @@ class TakEnvironment(Env):
         white_standing = np.where(board == TakPiece.WHITE_STANDING.value)
         white_capstone = np.where(board == TakPiece.WHITE_CAPSTONE.value)
 
-        def add_to_df(df: pd.DataFrame, file, rank, stack_index, color, piece):
+        def add_to_df(df: pd.DataFrame, file, rank, stack_index, color, piece, type):
             return df.append({
                 'file': file + 0.5,
                 'rank': rank + 0.5,
                 'stack_index': stack_index,
                 'color': color,
-                'piece': piece
+                'piece': piece,
+                'type': type
             }, ignore_index=True)
 
-        df = pd.DataFrame(columns=['file', 'rank', 'stack_index', 'color', 'piece'])
+        df = pd.DataFrame(columns=['file', 'rank', 'stack_index', 'color', 'piece', 'type'])
 
         for file, rank, stack_index in zip(*black_flats):
-            df = add_to_df(df, file, rank, stack_index, color_black, 'black_flat')
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_flat', 'flat')
         for file, rank, stack_index in zip(*black_standing):
-            df = add_to_df(df, file, rank, stack_index, color_black, 'black_standing')
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_standing', 'standing')
         for file, rank, stack_index in zip(*black_capstone):
-            df = add_to_df(df, file, rank, stack_index, color_black, 'black_capstone')
+            df = add_to_df(df, file, rank, stack_index, color_black, 'black_capstone', 'capstone')
         for file, rank, stack_index in zip(*white_flats):
-            df = add_to_df(df, file, rank, stack_index, color_white, 'white_flat')
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_flat', 'flat')
         for file, rank, stack_index in zip(*white_standing):
-            df = add_to_df(df, file, rank, stack_index, color_white, 'white_standing')
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_standing', 'standing')
         for file, rank, stack_index in zip(*white_capstone):
-            df = add_to_df(df, file, rank, stack_index, color_white, 'white_capstone')
+            df = add_to_df(df, file, rank, stack_index, color_white, 'white_capstone', 'capstone')
 
         fig = px.scatter_3d(
             df,
             x='file', y='rank', z='stack_index',
             color='color',
-            symbol='piece',
+            symbol='type',
             opacity=0.6,
             size_max=1.0
         )

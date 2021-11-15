@@ -206,3 +206,23 @@ class TakBoard(object):
         """
         file, rank = pos
         return 0 <= file < self.board_size and 0 <= rank < self.board_size
+
+    @staticmethod
+    def from_3d_matrix(board_matrix: np.ndarray, board_size: int) -> 'TakBoard':
+        """
+        Builds a board with the pieces on the given matrix
+        :param board_matrix: the matrix representation of the board
+        :param board_size: the size of the original board
+        :return: a TakBoard with the same data as the given matrix
+        """
+        stack_height = int(board_matrix.shape[0] / (board_size * board_size))
+        board_matrix = board_matrix.reshape((board_size, board_size, stack_height))
+        board = TakBoard(board_size)
+
+        for file in range(board_size):
+            for rank in range(board_size):
+                for i in range(board_matrix.shape[2]):
+                    piece_value = board_matrix[file, rank, i]
+                    if piece_value != 0:
+                        board.get_stack(file, rank).push(TakPiece(piece_value))
+        return board

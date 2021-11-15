@@ -115,35 +115,69 @@ class TakState(object):
         road_positions_controlled = self.controlled_road_spaces(player)
         max_steps = len(road_positions_controlled)
 
-        def get_connected_positions(position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        # Cannot possibly have path if there are not enough controlled spaces for the shortest possible road (straight)
+        if max_steps < self.board_size:
+            return False
+
+        def get_connected_positions(position: Tuple[int, int]) -> Set[Tuple[int, int]]:
             up = (position[0], position[1] + 1)
             right = (position[0] + 1, position[1])
             down = (position[0], position[1] - 1)
             left = (position[0] - 1, position[1])
-            return [
+            return {
                 pos
                 for pos in [up, right, down, left]
                 if self.board.is_position_in_board(pos) and pos in road_positions_controlled
-            ]
+            }
 
-        def has_path(start_positions: List[Tuple[int, int]], end_positions: List[Tuple[int, int]]) -> bool:
-            end_positions = set(end_positions)
-            for start_position in start_positions:
-                current_positions: Set[Tuple[int, int]] = {start_position}
-                for step in range(max_steps):
-                    if len(current_positions.intersection(end_positions)) > 0:
-                        return True
-                    current_positions = set(flatten([get_connected_positions(pos) for pos in current_positions]))
+        def has_path(
+                start_positions: Set[Tuple[int, int]], end_positions: Set[Tuple[int, int]],
+                _max_steps: int, _step: int = 0
+        ) -> bool:
+            for current_position in start_positions:
+                if current_position in end_positions:
+                    return True
+                if _step > _max_steps:
+                    break
+                if has_path(
+                        get_connected_positions(current_position), end_positions,
+                        _max_steps, _step=_step + 1
+                ):
+                    return True
             return False
 
-        vertical_path = has_path(self.board.vertical_road_start_positions, self.board.vertical_road_end_positions)
-        horizontal_path = has_path(self.board.horizontal_road_start_positions, self.board.horizontal_road_end_positions)
+        controlled_vertical_start_positions = {
+            pos for pos in self.board.vertical_road_start_positions
+            if pos in road_positions_controlled
+        }
 
-        return vertical_path or horizontal_path
+        controlled_vertical_end_positions = {
+            pos for pos in self.board.vertical_road_end_positions
+            if pos in road_positions_controlled
+        }
+
+        if has_path(controlled_vertical_start_positions, controlled_vertical_end_positions, max_steps):
+            return True
+
+        controlled_horizontal_start_positions = {
+            pos for pos in self.board.horizontal_road_start_positions
+            if pos in road_positions_controlled
+        }
+
+        controlled_horizontal_end_positions = {
+            pos for pos in self.board.horizontal_road_end_positions
+            if pos in road_positions_controlled
+        }
+
+        if has_path(controlled_horizontal_start_positions, controlled_horizontal_end_positions, max_steps):
+            return True
+
+        return False
 
     def pieces_left_player(self, player: TakPlayer) -> bool:
         """
         Returns whether there are pieces left for the given player
+        TODO: docs
         :param player:
         :return:
         """

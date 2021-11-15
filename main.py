@@ -1,6 +1,7 @@
 from tqdm import trange
 
 from TakPlayerAgent import TakPlayerAgent
+from policies import RandomPolicyLessLikelyPlace
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 
@@ -9,8 +10,8 @@ from tak_env.TakPlayer import TakPlayer
 # env = make(TakEnvironment.ENV_NAME, board_size=3)
 env = TakEnvironment(board_size=5)
 
-agent_white_player = TakPlayerAgent(TakPlayer.WHITE)
-agent_black_player = TakPlayerAgent(TakPlayer.BLACK)
+agent_white_player = TakPlayerAgent(TakPlayer.WHITE, policy=RandomPolicyLessLikelyPlace())
+agent_black_player = TakPlayerAgent(TakPlayer.BLACK, policy=RandomPolicyLessLikelyPlace())
 
 info = {'ended_with_path': False}
 
@@ -21,7 +22,7 @@ def log(log_pre, s):
 
 log_str = "Nothing here"
 
-for _ in trange(1000):
+for _ in trange(10000):
     state = env.reset()
     log_str = ""
 
@@ -60,5 +61,7 @@ for _ in trange(1000):
 print(log_str)
 
 env.render()
+
+env.state.board.as_3d_matrix()[0].tofile("savedboard_1.txt")
 
 env.close()
