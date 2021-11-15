@@ -207,8 +207,8 @@ class TakActionMove(TakAction):
             return False
 
         # Can only move if the number of drop pieces fits in the board from the position in the direction
-        ending_x, ending_y = self.get_ending_position()
-        if not (0 <= ending_x < state.board.board_size and 0 <= ending_y < state.board.board_size):
+        ending_file, ending_rank = self.get_ending_position()
+        if not state.board.is_position_in_board((ending_file, ending_rank)):
             return False
 
         # Can only move if for each drop position it: is empty, has a flat stone, or flattening a standing piece
@@ -217,6 +217,8 @@ class TakActionMove(TakAction):
         delta_file, delta_rank = self.direction.get_delta()
         for i, drop_n in enumerate(self.drop_order):
             drop_file, drop_rank = drop_file + delta_file * drop_n, drop_rank + delta_rank * drop_n
+            if not state.board.is_position_in_board((drop_file, drop_rank)):
+                return False
             position_stack = state.board.get_stack(drop_file, drop_rank)
             if not position_stack.is_empty():
                 top_piece = position_stack.top()
