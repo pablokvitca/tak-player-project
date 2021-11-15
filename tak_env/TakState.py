@@ -104,12 +104,21 @@ class TakState(object):
             else:
                 raise ValueError(f"No capstone available for player {player}")
 
-    def has_path_for_player(self, player: TakPlayer) -> bool:
+    def has_path_for_player(
+            self,
+            player: TakPlayer,
+            only_low_road: bool = False,
+            only_high_road: bool = False,
+            only_straight_road: bool = False,
+    ) -> bool:
         """
         Returns whether there is a path for the given player
         TODO: docs
         TODO: tests!
         :param player:
+        :param only_low_road:  TODO: implement options
+        :param only_high_road:  TODO: implement options
+        :param only_straight_road:  TODO: implement options
         :return:
         """
         road_positions_controlled = self.controlled_road_spaces(player)

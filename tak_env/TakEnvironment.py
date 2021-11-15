@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable, Union
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,9 @@ class TakEnvironment(Env):
                  board_size,
                  use_capstone: Optional[bool] = None,
                  init_pieces: Optional[int] = None,
-                 init_player: TakPlayer = TakPlayer.WHITE
+                 init_player: TakPlayer = TakPlayer.WHITE,
+                 scoring_discount: bool = False,
+                 scoring_metric: Union[str, Callable[[TakPlayer, Optional[TakPlayer]], float]] = None
                  ):
         """
         Initialize the tak_env
@@ -32,7 +34,10 @@ class TakEnvironment(Env):
         :param use_capstone:
         :param init_pieces:
         :param init_player:
+        :param scoring_discount:
+        :param scoring_metric:
         """
+
         self.board_size: int = board_size
         self.use_capstone: bool = use_capstone if use_capstone is not None \
             else TakEnvironment.default_capstone(board_size)
@@ -41,6 +46,19 @@ class TakEnvironment(Env):
         self.init_player: TakPlayer = init_player
 
         self.state: TakState = self.reset()
+
+        self.scoring_discount = scoring_discount
+
+        if scoring_metric is not None:
+            if isinstance(scoring_metric, str):
+                self.scoring_metric = {
+                    "default": self.scoring_default,
+                    "downings": self.scoring_downings_rules,
+                    "middletown": self.scoring_middletown_rules,
+                    "tarway": self.scoring_tarway_rules,
+                }
+        else:
+            self.scoring_metric = self.scoring_default
 
     def force_state(self, state: TakState) -> None:
         """
@@ -112,10 +130,62 @@ class TakEnvironment(Env):
         :param winning_player: The player who won the game
         :return: The score of the ended game
         """
-        # TODO: compute scoring
         if winning_player is None:
             return 0.0
-        return 1.0 if current_player == winning_player else -1.0
+        return self.scoring_metric(current_player, winning_player, discount=self.scoring_discount)
+
+    def scoring_default(
+            self,
+            current_player: TakPlayer,
+            winning_player: Optional[TakPlayer],
+            discount: bool = False
+    ) -> float:
+        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
+        return score if current_player == winning_player else (-score if discount else 0.0)
+
+    def scoring_downings_rules(
+            self,
+            current_player: TakPlayer,
+            winning_player: Optional[TakPlayer],
+            discount: bool = False
+    ) -> float:
+        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
+        if current_player == winning_player:
+            if self.state.has_path_for_player(current_player, only_straight=True):
+                return score * 2
+            return score
+        else:
+            return -score if discount else 0.0
+
+    def scoring_middletown_rules(
+            self,
+            current_player: TakPlayer,
+            winning_player: Optional[TakPlayer],
+            discount: bool = False
+    ) -> float:
+        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
+        if current_player == winning_player:
+            if self.state.current_player_has_capstone_available():
+                return score * 2
+            return score
+        else:
+            return -score if discount else 0.0
+
+    def scoring_tarway_rules(
+            self,
+            current_player: TakPlayer,
+            winning_player: Optional[TakPlayer],
+            discount: bool = False
+    ) -> float:
+        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
+        if current_player == winning_player:
+            if self.state.has_path_for_player(current_player, only_low_road=True):
+                return score * 2
+            if self.state.has_path_for_player(current_player, only_high_road=True):
+                return score * 3
+            return score
+        else:
+            return -score if discount else 0.0
 
     def winning_player(self, last_play_by: TakPlayer) -> Optional[TakPlayer]:
         """
@@ -236,7 +306,6 @@ class TakEnvironment(Env):
         """
         Render the board in text mode
         """
-        # TODO: implement render method
         print("TAK ENVIRONMENT RENDER --- START")
 
         print(f"Current player: {self.state.current_player}")
@@ -267,14 +336,19 @@ class TakEnvironment(Env):
         :param board_size: The size of the board
         :return: The default number of pieces for that board size
         """
-        return board_size * board_size  # TODO: get from rulebook
+        default_pieces = {3: 10, 4: 15, 5: 21, 6: 30, 7: 30, 8: 50}  # https://ustak.org/play-beautiful-game-tak/
+        return default_pieces.get(board_size, board_size * board_size)  # if weird board, just return the size squared
 
     @staticmethod
     def default_capstone(board_size) -> bool:
         """
-        TODO; docs
+        Get the default capstone setting for a player at the start a game
 
         :param board_size: The size of the board
         :return:
         """
-        return board_size > 4  # TODO: get from rulebook
+        default_capstone = {3: 0, 4: 0, 5: 1, 6: 1, 7: 1, 8: 2}  # https://ustak.org/play-beautiful-game-tak/
+        if board_size in default_capstone:
+            return default_capstone[board_size] > 0  # Original rules support many capstone, we use just one
+        else:
+            return board_size > 4  # if weird board, just return True if the size is not too small
