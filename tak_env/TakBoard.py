@@ -189,7 +189,7 @@ class TakBoard(object):
 
         max_height = max(1, max([self.get_stack(file, rank).height() for file, rank in self._positions_iterable]))
 
-        board_matrix = np.zeros((self.board_size, self.board_size, max_height), dtype=np.int)
+        board_matrix = np.zeros((self.board_size, self.board_size, max_height), dtype=int)
 
         for file, rank in self._positions_iterable:
             stack: TakStack = self.get_stack(file, rank)

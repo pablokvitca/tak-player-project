@@ -85,7 +85,7 @@ class TakActionPlace(TakAction):
         if self.piece.is_capstone() and not state.current_player_has_capstone_available():
             return False
         # Can only place a piece if the player has a piece available
-        elif not state.current_player_has_pieces_available():
+        elif not self.piece.is_capstone() and not state.current_player_has_pieces_available():
             return False
 
         # Place action is valid
