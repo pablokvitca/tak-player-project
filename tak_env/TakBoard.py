@@ -147,14 +147,14 @@ class TakBoard(object):
         file, rank = position
         self.get_stack(file, rank).push(piece)
 
-    def print_board_names(self) -> None:
+    def get_board_names_str(self) -> str:
         """
-        Prints the names of each position in the board
+        Gets a string show the names of each position in the board
         """
-        print('\n'.join(
+        return '\n'.join(
             ' '.join(TakBoard.get_square_name((file, rank)) for file in range(self.board_size))
             for rank in range(self.board_size - 1, -1, -1)
-        ))
+        )
 
     def __str__(self) -> str:
         """
