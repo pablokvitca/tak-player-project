@@ -1,7 +1,7 @@
 from tqdm import trange
 
 from agents.TakPlayerAgent import TakPlayerAgent
-from policies.RandomPolicyPlaceMoveEqual import RandomPolicyLessLikelyPlace
+from policies.RandomPolicyPlaceMoveEqual import RandomPolicyPlaceMoveEqual
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 
@@ -10,8 +10,8 @@ from tak_env.TakPlayer import TakPlayer
 # env = make(TakEnvironment.ENV_NAME, board_size=3)
 env = TakEnvironment(board_size=5)
 
-agent_white_player = TakPlayerAgent(TakPlayer.WHITE, policy=RandomPolicyLessLikelyPlace())
-agent_black_player = TakPlayerAgent(TakPlayer.BLACK, policy=RandomPolicyLessLikelyPlace())
+agent_white_player = TakPlayerAgent(TakPlayer.WHITE, policy=RandomPolicyPlaceMoveEqual())
+agent_black_player = TakPlayerAgent(TakPlayer.BLACK, policy=RandomPolicyPlaceMoveEqual())
 
 info = {'ended_with_path': False}
 

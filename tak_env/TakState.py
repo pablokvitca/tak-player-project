@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set, Optional
+from typing import List, Tuple, Set, Optional, Any, Dict
 
 from more_itertools import flatten
 
@@ -38,6 +38,9 @@ class TakState(object):
         self.black_capstone_available: bool = black_capstone_available
 
         self.current_player: TakPlayer = current_player
+
+        self.cache_is_terminal: Optional[bool] = None
+        self.cache_is_terminal_info: Optional[Dict[str, Any]] = None
 
     def first_action(self) -> bool:
         """
@@ -263,3 +266,66 @@ class TakState(object):
             self.black_capstone_available,
             self.current_player
         )
+
+    def is_terminal(self) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Returns whether this state is terminal (and extra info)
+        :return: True if this state is terminal, False otherwise, and extra info as a dictionary
+        """
+        if self.cache_is_terminal is None and self.cache_is_terminal_info is None:
+            has_path_for_white = self.has_path_for_player(TakPlayer.WHITE)
+            has_path_for_black = self.has_path_for_player(TakPlayer.BLACK)
+
+            has_path = has_path_for_white and has_path_for_black
+
+            has_pieces_left = self.pieces_left()
+            has_spaces_left = self.spaces_left()
+
+            last_player_to_move = self.current_player.other()
+
+            winning_player = self.winning_player(last_player_to_move, has_path_for_white, has_path_for_black)
+
+            self.cache_is_terminal = has_path or not has_pieces_left or not has_spaces_left
+            if self.cache_is_terminal:
+                self.cache_is_terminal_info = {
+                    "ended_with_path": has_path,
+                    "ended_with_no_pieces_left": not has_pieces_left,
+                    "ended_with_no_spaces_left": not has_spaces_left,
+                    "winning_player": winning_player,
+                }
+        return self.cache_is_terminal, self.cache_is_terminal_info
+
+    def winning_player(self, last_play_by: TakPlayer, has_path_for_white: bool, has_path_for_black: bool) \
+            -> Optional[TakPlayer]:
+        """
+        Determines which player won the game. Assumes that the game is over.
+
+        :param last_play_by: The player who last played
+        :param has_path_for_white: Whether white has a path
+        :param has_path_for_black: Whether black has a path
+        :return: The winning player
+        """
+
+        # Did the last player to play win?
+        if last_play_by == TakPlayer.WHITE and has_path_for_white:
+            return TakPlayer.WHITE
+        if last_play_by == TakPlayer.BLACK and has_path_for_black:
+            return TakPlayer.BLACK
+
+        # Did the other player win?
+        if has_path_for_white:
+            return TakPlayer.WHITE
+        if has_path_for_black:
+            return TakPlayer.BLACK
+
+        # Secondary condition:
+        flat_controlled_spaces_white: int = len(self.controlled_flat_spaces(TakPlayer.WHITE))
+        flat_controlled_spaces_black: int = len(self.controlled_flat_spaces(TakPlayer.BLACK))
+
+        if flat_controlled_spaces_white > flat_controlled_spaces_black:
+            return TakPlayer.WHITE
+        if flat_controlled_spaces_black > flat_controlled_spaces_white:
+            return TakPlayer.BLACK
+
+        # Tie
+        return None

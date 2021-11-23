@@ -5,6 +5,7 @@ import pandas as pd
 from gym import Env
 from tak_env.TakAction import TakAction
 from tak_env.TakPiece import TakPiece
+from tak_env.TakScorer import TakScorer
 from tak_env.TakState import TakState
 from tak_env.TakBoard import TakBoard
 from tak_env.TakPlayer import TakPlayer
@@ -25,7 +26,7 @@ class TakEnvironment(Env):
                  init_pieces: Optional[int] = None,
                  init_player: TakPlayer = TakPlayer.WHITE,
                  scoring_discount: bool = False,
-                 scoring_metric: Union[str, Callable[[TakPlayer, Optional[TakPlayer]], float]] = None
+                 scoring_metric: Union[str, TakScorer] = 'default'
                  ):
         """
         Initialize the tak_env
@@ -49,16 +50,7 @@ class TakEnvironment(Env):
 
         self.scoring_discount = scoring_discount
 
-        if scoring_metric is not None:
-            if isinstance(scoring_metric, str):
-                self.scoring_metric = {
-                    "default": self.scoring_default,
-                    "downings": self.scoring_downings_rules,
-                    "middletown": self.scoring_middletown_rules,
-                    "tarway": self.scoring_tarway_rules,
-                }
-        else:
-            self.scoring_metric = self.scoring_default
+        self.scoring_metric = scoring_metric if isinstance(scoring_metric, TakScorer) else TakScorer.get(scoring_metric)
 
     def force_state(self, state: TakState) -> None:
         """
@@ -92,25 +84,13 @@ class TakEnvironment(Env):
 
         next_state: TakState = action.take(self.state, mutate=mutate)
 
-        has_path_for_white = next_state.has_path_for_player(TakPlayer.WHITE)
-        has_path_for_black = next_state.has_path_for_player(TakPlayer.BLACK)
-
-        has_path = has_path_for_white and has_path_for_black
-
-        has_pieces_left = next_state.pieces_left()
-        has_spaces_left = next_state.spaces_left()
-        done = has_path or not has_pieces_left or not has_spaces_left
+        done, info = next_state.is_terminal()
 
         reward = 0.0
-        info = {}
         if done:
-            winning_player = self.winning_player(current_player)
+            winning_player = info["winning_player"]
             reward = self.compute_score(current_player, winning_player)
             info = {
-                "winning_player": winning_player,
-                "ended_with_path": has_path,
-                "ended_with_no_pieces_left": not has_pieces_left,
-                "ended_with_no_spaces_left": not has_spaces_left,
                 "white_pieces_available": next_state.white_pieces_available,
                 "white_capstone_available": next_state.white_capstone_available,
                 "black_pieces_available": next_state.black_pieces_available,
@@ -132,94 +112,11 @@ class TakEnvironment(Env):
         """
         if winning_player is None:
             return 0.0
-        return self.scoring_metric(current_player, winning_player, discount=self.scoring_discount)
-
-    def scoring_default(
-            self,
-            current_player: TakPlayer,
-            winning_player: Optional[TakPlayer],
-            discount: bool = False
-    ) -> float:
-        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
-        return score if current_player == winning_player else (-score if discount else 0.0)
-
-    def scoring_downings_rules(
-            self,
-            current_player: TakPlayer,
-            winning_player: Optional[TakPlayer],
-            discount: bool = False
-    ) -> float:
-        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
-        if current_player == winning_player:
-            if self.state.has_path_for_player(current_player, only_straight=True):
-                return score * 2
-            return score
-        else:
-            return -score if discount else 0.0
-
-    def scoring_middletown_rules(
-            self,
-            current_player: TakPlayer,
-            winning_player: Optional[TakPlayer],
-            discount: bool = False
-    ) -> float:
-        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
-        if current_player == winning_player:
-            if self.state.current_player_has_capstone_available():
-                return score * 2
-            return score
-        else:
-            return -score if discount else 0.0
-
-    def scoring_tarway_rules(
-            self,
-            current_player: TakPlayer,
-            winning_player: Optional[TakPlayer],
-            discount: bool = False
-    ) -> float:
-        score = (self.board_size * self.board_size) + self.state.pieces_left_player(current_player)
-        if current_player == winning_player:
-            if self.state.has_path_for_player(current_player, only_low_road=True):
-                return score * 2
-            if self.state.has_path_for_player(current_player, only_high_road=True):
-                return score * 3
-            return score
-        else:
-            return -score if discount else 0.0
-
-    def winning_player(self, last_play_by: TakPlayer) -> Optional[TakPlayer]:
-        """
-        Determines which player won the game. Assumes that the game is over.
-
-        :param last_play_by: The player who last played
-        :return: The winning player
-        """
-        has_path_for_white = self.state.has_path_for_player(TakPlayer.WHITE)
-        has_path_for_black = self.state.has_path_for_player(TakPlayer.BLACK)
-
-        # Did the last player to play win?
-        if last_play_by == TakPlayer.WHITE and has_path_for_white:
-            return TakPlayer.WHITE
-        if last_play_by == TakPlayer.BLACK and has_path_for_black:
-            return TakPlayer.BLACK
-
-        # Did the other player win?
-        if has_path_for_white:
-            return TakPlayer.WHITE
-        if has_path_for_black:
-            return TakPlayer.BLACK
-
-        # Secondary condition:
-        flat_controlled_spaces_white: int = len(self.state.controlled_flat_spaces(TakPlayer.WHITE))
-        flat_controlled_spaces_black: int = len(self.state.controlled_flat_spaces(TakPlayer.BLACK))
-
-        if flat_controlled_spaces_white > flat_controlled_spaces_black:
-            return TakPlayer.WHITE
-        if flat_controlled_spaces_black > flat_controlled_spaces_white:
-            return TakPlayer.BLACK
-
-        # Tie
-        return None
+        return self.scoring_metric.score(
+            self.board_size, self.state,
+            current_player, winning_player,
+            discount=self.scoring_discount
+        )
 
     def reset(self) -> TakState:
         """

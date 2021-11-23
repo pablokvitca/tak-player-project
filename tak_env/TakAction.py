@@ -28,11 +28,17 @@ class TakAction(object):
         raise NotImplementedError("Method '__eq__' not implemented")
 
     @staticmethod
-    def get_possible_actions(state: TakState) -> List['TakAction']:
+    def get_all_possible_move_actions(state) -> List['TakAction']:
         """
-        Returns a list of all possible actions that can be performed in this state.
+        Returns a list of all possible move actions that can be performed in this state.
         """
+        return TakActionMove.get_possible_move_actions(state, state.current_player)
 
+    @staticmethod
+    def get_all_possible_place_actions(state) -> List['TakAction']:
+        """
+        Returns a list of all possible palce actions that can be performed in this state.
+        """
         # FIRST ACTION
         current_player = state.current_player
         if state.first_action():
@@ -47,10 +53,18 @@ class TakAction(object):
         capstone_piece = TakPiece.get_capstone_piece_for_player(current_player)
         place_capstone = TakActionPlace.get_possible_place_actions(state, capstone_piece)
 
-        # MOVE ACTIONS
-        move_actions = TakActionMove.get_possible_move_actions(state, current_player)
+        return place_flat + place_standing + place_capstone
 
-        return place_flat + place_standing + place_capstone + move_actions
+    @staticmethod
+    def get_possible_actions(state: TakState) -> List['TakAction']:
+        """
+        Returns a list of all possible actions that can be performed in this state.
+        """
+
+        place_actions = TakAction.get_all_possible_place_actions(state)
+        move_actions = TakAction.get_all_possible_move_actions(state)
+
+        return place_actions + move_actions
 
 
 class TakActionPlace(TakAction):
