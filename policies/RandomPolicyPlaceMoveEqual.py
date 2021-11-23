@@ -2,22 +2,12 @@ from typing import List
 
 import numpy as np
 
+from policies.Policy import Policy
 from tak_env.TakAction import TakAction, TakActionMove, TakActionPlace
 
 
-class Policy:
+class RandomPolicyPlaceMoveEqual(Policy):
 
-    def select_action(self, possible_actions: List[TakAction]) -> TakAction:
-        raise NotImplementedError("The 'selection_action' method is not implemented.")
-
-
-class RandomPolicy(Policy):
-
-    def select_action(self, possible_actions: List[TakAction]) -> TakAction:
-        return np.random.choice(possible_actions)
-
-
-class RandomPolicyLessLikelyPlace(Policy):
     def select_action(self, possible_actions: List[TakAction]) -> TakAction:
         select_move = np.random.choice([True, False])
         if select_move:

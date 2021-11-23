@@ -1,7 +1,7 @@
 from tqdm import trange
 
-from TakPlayerAgent import TakPlayerAgent
-from policies import RandomPolicyLessLikelyPlace
+from agents.TakPlayerAgent import TakPlayerAgent
+from policies.RandomPolicyPlaceMoveEqual import RandomPolicyLessLikelyPlace
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 

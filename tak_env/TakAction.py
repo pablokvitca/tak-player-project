@@ -7,7 +7,7 @@ from tak_env.TakBoard import TakBoard
 from tak_env.TakPiece import TakPiece
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
-from utils import ordered_partitions
+from utils.utils import ordered_partitions
 
 
 class TakAction(object):

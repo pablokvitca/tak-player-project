@@ -1,4 +1,5 @@
-from policies import Policy, RandomPolicy
+from policies.RandomPolicy import RandomPolicy
+from policies.Policy import Policy
 from tak_env.TakAction import TakAction
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
