@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 import numpy as np
 
@@ -13,6 +13,12 @@ class TakBoard(object):
     TakBoard class
     TODO: docs
     """
+
+    cache_has_path_for_player = {}
+
+    @classmethod
+    def wipe_cache(cls):
+        cls.cache_has_path_for_player = {}
 
     def __init__(self, board_size: int):
         self.board_size = board_size
@@ -207,6 +213,174 @@ class TakBoard(object):
         file, rank = pos
         return 0 <= file < self.board_size and 0 <= rank < self.board_size
 
+    def spaces_left(self) -> bool:
+        """
+        Returns whether there are any empty spaces left on the board
+        :return: True if there are any empty spaces left
+        """
+        return len(self.get_empty_positions()) > 0
+
+    def controlled_flat_spaces(self, player: TakPlayer) -> List[Tuple[int, int]]:
+        """
+        Returns the list of positions controlled by the given player.
+        Defaults to only counting positions controlled by flat pieces
+
+        :param player: the player to count for
+        :return: a list of positions controlled by the player
+        """
+        return self.get_positions_controlled_by_player(player, only_flat_pieces=True)
+
+    def controlled_road_spaces(self, player: TakPlayer) -> List[Tuple[int, int]]:
+        """
+        Returns the list of positions controlled by the player with pieces that can build a road (flat or capstone)
+        :param player: the player to count for
+        :return: a list of positions controlled by the player
+        """
+        return self.get_positions_controlled_by_player(player, only_road_pieces=True)
+
+    def get_connected_positions(
+            self,
+            road_positions_controlled: List[Tuple[int, int]],
+            position: Tuple[int, int],
+            allowed_dirs: str = 'URDL',
+            only_low_road: bool = False,
+            only_high_road: bool = False
+    ) -> Set[Tuple[int, int]]:
+        up = (position[0], position[1] + 1) if 'U' in allowed_dirs else None
+        right = (position[0] + 1, position[1]) if 'R' in allowed_dirs else None
+        down = (position[0], position[1] - 1) if 'D' in allowed_dirs else None
+        left = (position[0] - 1, position[1]) if 'L' in allowed_dirs else None
+        return {
+            pos
+            for pos in [up, right, down, left]
+            if (
+                    pos is not None  # None means not considering going in that direction
+                    and self.is_position_in_board(pos)  # Position must be in the board
+                    and (not only_low_road or self.position_height(pos[0], pos[1]) == 1)  # only low road
+                    and (not only_high_road or self.position_height(pos[0], pos[1]) >= 1)  # only high road
+                    and pos in road_positions_controlled  # Position must be controlled by the player
+            )
+        }
+
+    def has_path(
+            self,
+            road_positions_controlled: List[Tuple[int, int]],
+            start_positions: Set[Tuple[int, int]],
+            end_positions: Set[Tuple[int, int]],
+            _max_steps: int, _step: int = 0,
+            allowed_dirs: Optional[str] = 'URDL',
+            only_low_road: bool = False,
+            only_high_road: bool = False
+    ) -> bool:
+        allowed_dirs = allowed_dirs if allowed_dirs is not None else 'URDL'
+        for current_position in start_positions:
+            if current_position in end_positions:
+                return True
+            if _step > _max_steps:
+                break
+            if self.has_path(
+                    road_positions_controlled,
+                    self.get_connected_positions(
+                        road_positions_controlled,
+                        current_position,
+                        allowed_dirs=allowed_dirs,
+                        only_low_road=only_low_road,
+                        only_high_road=only_high_road
+                    ),
+                    end_positions,
+                    _max_steps=_max_steps,
+                    _step=_step + 1
+            ):
+                return True
+        return False
+
+    def has_path_for_player(
+            self,
+            player: TakPlayer,
+            only_low_road: bool = False,
+            only_high_road: bool = False,
+            only_straight_road: bool = False,
+    ) -> bool:
+        """
+        Memo _has_path_for_player
+        """
+        params = (self, player, only_low_road, only_high_road, only_straight_road)
+        if params not in self.__class__.cache_has_path_for_player:
+            self.__class__.cache_has_path_for_player[params] = self._has_path_for_player(
+                player,
+                only_low_road=only_low_road, only_high_road=only_high_road, only_straight_road=only_straight_road
+            )
+        return self.__class__.cache_has_path_for_player[params]
+
+    def _has_path_for_player(
+            self,
+            player: TakPlayer,
+            only_low_road: bool = False,
+            only_high_road: bool = False,
+            only_straight_road: bool = False,
+    ) -> bool:
+        """
+        Returns whether there is a path for the given player
+        TODO: docs
+        TODO: tests!
+        :param player:
+        :param only_low_road:
+        :param only_high_road:
+        :param only_straight_road:
+        :return:
+        """
+        assert not (only_low_road and only_high_road), "Only accepts only_high_road or only_low_road, not both"
+
+        road_positions_controlled = self.controlled_road_spaces(player)
+        max_steps = len(road_positions_controlled)
+
+        # Cannot possibly have path if there are not enough controlled spaces for the shortest possible road (straight)
+        if max_steps < self.board_size:
+            return False
+
+        controlled_vertical_start_positions = {
+            pos for pos in self.vertical_road_start_positions
+            if pos in road_positions_controlled
+        }
+
+        controlled_vertical_end_positions = {
+            pos for pos in self.vertical_road_end_positions
+            if pos in road_positions_controlled
+        }
+
+        allowed_dirs_vertical = 'UD' if only_straight_road else None
+        v_possible = len(controlled_vertical_start_positions) > 0 and len(controlled_vertical_end_positions) > 0
+        if v_possible and self.has_path(
+                road_positions_controlled,
+                controlled_vertical_start_positions, controlled_vertical_end_positions,
+                max_steps,
+                allowed_dirs=allowed_dirs_vertical, only_low_road=only_low_road, only_high_road=only_high_road
+        ):
+            return True
+
+        controlled_horizontal_start_positions = {
+            pos for pos in self.horizontal_road_start_positions
+            if pos in road_positions_controlled
+        }
+
+        controlled_horizontal_end_positions = {
+            pos for pos in self.horizontal_road_end_positions
+            if pos in road_positions_controlled
+        }
+
+        allowed_dirs_horizontal = 'RL' if only_straight_road else None
+        h_possible = len(controlled_horizontal_start_positions) > 0 and len(controlled_horizontal_end_positions) > 0
+        if h_possible and self.has_path(
+                road_positions_controlled,
+                controlled_horizontal_start_positions,
+                controlled_horizontal_end_positions,
+                max_steps,
+                allowed_dirs=allowed_dirs_horizontal, only_low_road=only_low_road, only_high_road=only_high_road
+        ):
+            return True
+
+        return False
+
     @staticmethod
     def from_3d_matrix(board_matrix: np.ndarray, board_size: int) -> 'TakBoard':
         """
@@ -226,3 +400,9 @@ class TakBoard(object):
                     if piece_value != 0:
                         board.get_stack(file, rank).push(TakPiece(piece_value))
         return board
+
+    def __eq__(self, other) -> bool:
+        return self.board_size == other.board_size and self.board == other.board
+
+    def __hash__(self) -> int:
+        return hash((self.board_size, tuple(tuple(stack for stack in row) for row in self.board)))

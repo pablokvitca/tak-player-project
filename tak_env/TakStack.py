@@ -90,8 +90,11 @@ class PieceStack(object):
     def __len__(self) -> int:
         return len(self.stack)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.stack == other.stack
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.stack))
 
     def copy(self) -> 'PieceStack':
         return PieceStack(self.as_list())
