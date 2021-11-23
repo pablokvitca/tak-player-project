@@ -1,7 +1,4 @@
 from typing import List, Tuple, Set, Optional, Any, Dict
-
-from more_itertools import flatten
-
 from tak_env.TakBoard import TakBoard
 from tak_env.TakPlayer import TakPlayer
 
@@ -17,6 +14,12 @@ class TakState(object):
         - Whether the the black player has a capstone available to place
         - Which player's turn it is
     """
+
+    cache_state_is_terminal: Dict['TakState', Tuple[bool, Dict[str, Any]]] = {}
+
+    @classmethod
+    def wipe_cache(cls):
+        cls.cache_state_is_terminal = {}
 
     def __init__(self,
                  board_size: int,
@@ -41,6 +44,9 @@ class TakState(object):
 
         self.cache_is_terminal: Optional[bool] = None
         self.cache_is_terminal_info: Optional[Dict[str, Any]] = None
+
+        if self in TakState.cache_state_is_terminal:
+            self.cache_is_terminal, self.cache_is_terminal_info = TakState.cache_state_is_terminal[self]
 
     def first_action(self) -> bool:
         """
@@ -144,7 +150,7 @@ class TakState(object):
                 if (
                         pos is not None  # None means not considering going in that direction
                         and self.board.is_position_in_board(pos)  # Position must be in the board
-                        and (not only_low_road or self.board.position_height(pos[0], pos[1]) == 1) # only low road
+                        and (not only_low_road or self.board.position_height(pos[0], pos[1]) == 1)  # only low road
                         and (not only_high_road or self.board.position_height(pos[0], pos[1]) >= 1)  # only high road
                         and pos in road_positions_controlled  # Position must be controlled by the player
                 )
@@ -293,6 +299,7 @@ class TakState(object):
                     "ended_with_no_spaces_left": not has_spaces_left,
                     "winning_player": winning_player,
                 }
+            self.__class__.cache_state_is_terminal[self] = self.cache_is_terminal, self.cache_is_terminal_info
         return self.cache_is_terminal, self.cache_is_terminal_info
 
     def winning_player(self, last_play_by: TakPlayer, has_path_for_white: bool, has_path_for_black: bool) \

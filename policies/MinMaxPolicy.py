@@ -1,4 +1,4 @@
-from typing import List, Callable, Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -10,18 +10,18 @@ from tak_env.TakState import TakState
 
 class MinMaxPolicy(Policy):
 
-    def __init__(self, depth: int, state_evaluator: Optional[Callable[[TakState], float]] = None):
+    def __init__(self, depth: int):
         self.depth = depth
         self.scorer = TakScorerDefault()
-        self.state_evaluator = MinMaxPolicy._simple_state_evaluator if state_evaluator is None else state_evaluator
 
     def select_action(self, state: TakState, possible_actions: List[TakAction]) -> TakAction:
         """
         Selects an action from the given state using the MinMax algorithm.
-        :param state:
-        :param possible_actions:
-        :return:
+        :param state: the state to select an action from
+        :param possible_actions: the possible actions to select from
+        :return: the selected action
         """
+
         possible_action_values = [self._evaluate_action_max(state, a, self.depth) for a in possible_actions]
         return MinMaxPolicy.argmax_action(possible_actions, possible_action_values)
 
@@ -34,16 +34,16 @@ class MinMaxPolicy(Policy):
     def _evaluate_action_max(self, state: TakState, action: TakAction, depth: Optional[int] = None) -> float:
         """
         Evaluates the value of taking the given action from the given state
-        :param state:
-        :param action:
-        :param depth:
-        :return:
+        :param state: the current state to expand actions from
+        :param action: the action to take
+        :param depth: the depth to expand to
+        :return: the value of the action
         """
-        if depth == 0 or state.is_terminal()[0]:
+        next_state = action.take(state, mutate=False)
+        if depth == 0 or next_state.is_terminal()[0]:
             return self.state_evaluator(state)
 
         next_depth = (self.depth if depth is None else depth) - 1
-        next_state = action.take(state, mutate=False)
         next_actions = TakAction.get_possible_actions(next_state)
         next_action_values = [self._evaluate_action_min(next_state, a, next_depth) for a in next_actions]
         return np.max(np.array(next_action_values))
@@ -51,26 +51,31 @@ class MinMaxPolicy(Policy):
     def _evaluate_action_min(self, state: TakState, action: TakAction, depth: Optional[int] = None) -> float:
         """
         Evaluates the value of taking the given action from the given state
-        :param state:
-        :param action:
-        :param depth:
-        :return:
+        :param state: the current state to expand actions from
+        :param action: the action to take
+        :param depth: the depth to expand to
+        :return: the value of the action
         """
-        if depth == 0 or state.is_terminal()[0]:
+        next_state = action.take(state, mutate=False)
+        if depth == 0 or next_state.is_terminal()[0]:
             return self.state_evaluator(state)
 
         next_depth = (self.depth if depth is None else depth) - 1
-        next_state = action.take(state, mutate=False)
         next_actions = TakAction.get_possible_actions(next_state)
         next_action_values = [self._evaluate_action_max(next_state, a, next_depth) for a in next_actions]
         return np.min(np.array(next_action_values))
 
-    def _simple_state_evaluator(self, state: TakState) -> float:
+    def state_evaluator(self, state: TakState) -> float:
         """
         The simple evaluator returns 0 on non-terminal states. In the terminal state it returns +/- the score of the
         winning player in the terminal state. If the winning player is the last player to move, the score is positive,
         otherwise it is negative.
+        NOTE: can be overridden to use a different evaluator.
+
+        :param state: the state to evaluate
+        :return: the value of the state
         """
+
         done, info = state.is_terminal()
         if done:
             current_player = state.current_player

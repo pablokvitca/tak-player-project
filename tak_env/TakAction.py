@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple, List, Iterable
+from typing import Tuple, List, Iterable, Dict
 
 from more_itertools import flatten
 
@@ -11,6 +11,14 @@ from utils.utils import ordered_partitions
 
 
 class TakAction(object):
+
+    # cache_possible_move_actions: Dict[TakState, List['TakAction']] = {}
+    # cache_possible_place_actions: Dict[TakState, List['TakAction']] = {}
+
+    # @classmethod
+    # def wipe_cache(cls):
+    #     cls.cache_possible_move_actions = {}
+    #     cls.cache_possible_place_actions = {}
 
     def __init__(self, position: Tuple[int, int]):
         self.position: Tuple[int, int] = position
@@ -27,20 +35,70 @@ class TakAction(object):
     def __hash__(self):
         raise NotImplementedError("Method '__eq__' not implemented")
 
+    # @classmethod
+    # def get_all_possible_move_actions(cls, state) -> List['TakAction']:
+    #     """
+    #     Returns a list of all possible move actions that can be performed in this state.
+    #     """
+    #     if state not in cls.cache_possible_move_actions:
+    #         if state.is_terminal()[0]:
+    #             cls.cache_possible_move_actions[state] = []
+    #         else:
+    #             cls.cache_possible_move_actions[state] = \
+    #                 TakActionMove.get_possible_move_actions(state, state.current_player)
+    #
+    #     return cls.cache_possible_move_actions[state]
+
     @staticmethod
     def get_all_possible_move_actions(state) -> List['TakAction']:
         """
         Returns a list of all possible move actions that can be performed in this state.
         """
+        # if state.is_terminal()[0]:
+        #     return []
         return TakActionMove.get_possible_move_actions(state, state.current_player)
+
+    # @classmethod
+    # def get_all_possible_place_actions(cls, state) -> List['TakAction']:
+    #     """
+    #     Returns a list of all possible place actions that can be performed in this state.
+    #     """
+    #     if state not in cls.cache_possible_place_actions:
+    #         if state.is_terminal()[0]:
+    #             cls.cache_possible_place_actions[state] = []
+    #         else:
+    #             current_player = state.current_player
+    #
+    #             # FIRST ACTION
+    #             if state.first_action():
+    #                 flat_piece = TakPiece.get_flat_piece_for_player(current_player.other())
+    #                 cls.cache_possible_place_actions[state] = \
+    #                     TakActionPlace.get_possible_place_actions(state, flat_piece)
+    #             else:
+    #
+    #                 # PLACE ACTIONS
+    #                 flat_piece = TakPiece.get_flat_piece_for_player(current_player)
+    #                 place_flat = TakActionPlace.get_possible_place_actions(state, flat_piece)
+    #                 standing_piece = TakPiece.get_standing_piece_for_player(current_player)
+    #                 place_standing = TakActionPlace.get_possible_place_actions(state, standing_piece)
+    #                 capstone_piece = TakPiece.get_capstone_piece_for_player(current_player)
+    #                 place_capstone = TakActionPlace.get_possible_place_actions(state, capstone_piece)
+    #
+    #                 cls.cache_possible_place_actions[state] = place_flat + place_standing + place_capstone
+    #
+    #     return cls.cache_possible_place_actions[state]
 
     @staticmethod
     def get_all_possible_place_actions(state) -> List['TakAction']:
         """
-        Returns a list of all possible palce actions that can be performed in this state.
+        Returns a list of all possible place actions that can be performed in this state.
         """
-        # FIRST ACTION
+        # if state.is_terminal()[0]:
+        #     return []
+
         current_player = state.current_player
+
+        # FIRST ACTION
         if state.first_action():
             flat_piece = TakPiece.get_flat_piece_for_player(current_player.other())
             return TakActionPlace.get_possible_place_actions(state, flat_piece)
@@ -60,6 +118,8 @@ class TakAction(object):
         """
         Returns a list of all possible actions that can be performed in this state.
         """
+        if state.is_terminal()[0]:
+            return []
 
         place_actions = TakAction.get_all_possible_place_actions(state)
         move_actions = TakAction.get_all_possible_move_actions(state)

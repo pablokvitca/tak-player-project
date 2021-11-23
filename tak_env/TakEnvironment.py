@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Union
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -112,11 +112,7 @@ class TakEnvironment(Env):
         """
         if winning_player is None:
             return 0.0
-        return self.scoring_metric.score(
-            self.board_size, self.state,
-            current_player, winning_player,
-            discount=self.scoring_discount
-        )
+        return self.scoring_metric.score(self.state, current_player, winning_player, discount=self.scoring_discount)
 
     def reset(self) -> TakState:
         """

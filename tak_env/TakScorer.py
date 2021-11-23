@@ -1,6 +1,4 @@
 from typing import Optional, Dict, Callable
-
-from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
 
