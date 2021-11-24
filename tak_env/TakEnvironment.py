@@ -20,14 +20,15 @@ class TakEnvironment(Env):
 
     ENV_NAME = "TakEnvironment-v0"
 
-    def __init__(self,
-                 board_size,
-                 use_capstone: Optional[bool] = None,
-                 init_pieces: Optional[int] = None,
-                 init_player: TakPlayer = TakPlayer.WHITE,
-                 scoring_discount: bool = False,
-                 scoring_metric: Union[str, TakScorer] = 'default'
-                 ):
+    def __init__(
+            self,
+            board_size,
+            use_capstone: Optional[bool] = None,
+            init_pieces: Optional[int] = None,
+            init_player: TakPlayer = TakPlayer.WHITE,
+            scoring_discount: bool = False,
+            scoring_metric: Union[str, TakScorer] = 'default'
+    ):
         """
         Initialize the tak_env
         TODO: docs
@@ -45,12 +46,10 @@ class TakEnvironment(Env):
         self.init_pieces: int = init_pieces if init_pieces is not None \
             else TakEnvironment.get_default_pieces(board_size)
         self.init_player: TakPlayer = init_player
+        self.scoring_discount = scoring_discount
+        self.scoring_metric = scoring_metric if isinstance(scoring_metric, TakScorer) else TakScorer.get(scoring_metric)
 
         self.state: TakState = self.reset()
-
-        self.scoring_discount = scoring_discount
-
-        self.scoring_metric = scoring_metric if isinstance(scoring_metric, TakScorer) else TakScorer.get(scoring_metric)
 
     def force_state(self, state: TakState) -> None:
         """
@@ -78,7 +77,7 @@ class TakEnvironment(Env):
         :return: the resulting state, the reward, if the game is over, and the info
         """
         if not action.is_valid(self.state):
-            raise ValueError(f"Invalid action: {action}")
+            raise ValueError(f"Invalid action: {action} (state matrix: {self.state.board.as_3d_matrix()}) ")
 
         current_player = self.state.current_player
 
@@ -90,12 +89,12 @@ class TakEnvironment(Env):
         if done:
             winning_player = info["winning_player"]
             reward = self.compute_score(current_player, winning_player)
-            info = {
+            info.update({
                 "white_pieces_available": next_state.white_pieces_available,
                 "white_capstone_available": next_state.white_capstone_available,
                 "black_pieces_available": next_state.black_pieces_available,
                 "black_capstone_available": next_state.black_capstone_available,
-            }
+            })
 
         self.state = next_state
 
@@ -245,3 +244,15 @@ class TakEnvironment(Env):
             return default_capstone[board_size] > 0  # Original rules support many capstone, we use just one
         else:
             return board_size > 4  # if weird board, just return True if the size is not too small
+
+    def get_env_at_state(self, leaf: TakState) -> 'TakEnvironment':
+        new_env = TakEnvironment(
+            self.board_size,
+            use_capstone=self.use_capstone,
+            init_pieces=self.init_pieces,
+            init_player=self.init_player,
+            scoring_discount=self.scoring_discount,
+            scoring_metric=self.scoring_metric
+        )
+        new_env.state = leaf.copy()
+        return new_env

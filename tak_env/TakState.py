@@ -159,9 +159,9 @@ class TakState(object):
         Returns whether this state is terminal (and extra info)
         :return: True if this state is terminal, False otherwise, and extra info as a dictionary
         """
-        if self.cache_is_terminal is None and self.cache_is_terminal_info is None:
-            has_path_for_white = self.has_path_for_player(TakPlayer.WHITE)
-            has_path_for_black = self.has_path_for_player(TakPlayer.BLACK)
+        if True or (self.cache_is_terminal is None and self.cache_is_terminal_info is None):
+            has_path_for_white = self.board.has_path_for_player(TakPlayer.WHITE)
+            has_path_for_black = self.board.has_path_for_player(TakPlayer.BLACK)
 
             has_path = has_path_for_white and has_path_for_black
 
@@ -207,8 +207,8 @@ class TakState(object):
             return TakPlayer.BLACK
 
         # Secondary condition:
-        flat_controlled_spaces_white: int = len(self.controlled_flat_spaces(TakPlayer.WHITE))
-        flat_controlled_spaces_black: int = len(self.controlled_flat_spaces(TakPlayer.BLACK))
+        flat_controlled_spaces_white: int = len(self.board.controlled_flat_spaces(TakPlayer.WHITE))
+        flat_controlled_spaces_black: int = len(self.board.controlled_flat_spaces(TakPlayer.BLACK))
 
         if flat_controlled_spaces_white > flat_controlled_spaces_black:
             return TakPlayer.WHITE
@@ -217,3 +217,30 @@ class TakState(object):
 
         # Tie
         return None
+
+    def __eq__(self, other) -> bool:
+        """
+        Returns whether this state is equal to another state
+        :param other: The other state
+        :return: True if equal, False otherwise
+        """
+        return isinstance(other, TakState) and \
+               self.board_size == other.board_size and \
+               self.board == other.board and \
+               self.white_pieces_available == other.white_pieces_available and \
+               self.black_pieces_available == other.black_pieces_available and \
+               self.white_capstone_available == other.white_capstone_available and \
+               self.black_capstone_available == other.black_capstone_available and \
+               self.current_player == other.current_player
+
+    def __hash__(self) -> int:
+        """
+        Gets the hash of this state
+        :return: int hash value
+        """
+        return hash((
+            self.board_size, self.board,
+            self.white_pieces_available, self.black_pieces_available,
+            self.white_capstone_available, self.black_capstone_available,
+            self.current_player
+        ))
