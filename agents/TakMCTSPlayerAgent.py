@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple, Union, Set, List
 
 import numpy as np
@@ -90,18 +91,18 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
             mcts_expansion_epsilon: float = 0.5,
             mcts_iterations: int = 10,
             rollout_runs: int = 10,
-            parallel_rollouts: bool = False,
+            parallel_rollouts: bool = True,
     ):
         super().__init__(player)
-        self.env = env
-        self.player = player
-        self.graph = graph
-        self.rollout_policy = TakMCTSPlayerAgent.default_rollout_policy() if rollout_policy is None else rollout_policy
-        self.mcts_expansion_depth = mcts_expansion_depth
-        self.mcts_expansion_epsilon = mcts_expansion_epsilon
-        self.mcts_iterations = mcts_iterations
-        self.rollout_runs = rollout_runs
-        self.parallel_rollouts = parallel_rollouts
+        self.env: TakEnvironment = env
+        self.player: TakPlayer = player
+        self.graph: MCTSPlayerKnowledgeGraph = graph
+        self.rollout_policy: Policy = rollout_policy or TakMCTSPlayerAgent.default_rollout_policy()
+        self.mcts_expansion_depth: int = mcts_expansion_depth
+        self.mcts_expansion_epsilon: float = mcts_expansion_epsilon
+        self.mcts_iterations: int = mcts_iterations
+        self.rollout_runs: int = rollout_runs
+        self.parallel_rollouts: bool = parallel_rollouts
 
     def select_action(self, state: TakState) -> TakAction:
         # SELECTION?
@@ -168,19 +169,26 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
         return current_state
 
     def rollout(self, leaf: TakState) -> List[float]:
-        # TODO: parallelize
-        rewards = [0] * self.rollout_runs
-        for i in range(self.rollout_runs):
-            env = self.env.get_copy_at_state(leaf)
-            done, info = leaf.is_terminal()
-            state, reward = leaf, 0.0 if not done else self._compute_score_for_terminal_state(leaf, info)
-            while not done:
-                possible_actions = TakAction.get_possible_actions(state)
-                action = self.rollout_policy.select_action(state, possible_actions)
-                next_state, reward, done, info = env.step(action)
-                state = next_state
-            rewards[i] = abs(reward) * (1.0 if info['winning_player'] == self.player else -1.0)
-        return rewards
+        if self.parallel_rollouts:
+            return self._rollout_parallel(leaf)
+        else:
+            return [self._rollout_single(leaf) for _ in range(self.rollout_runs)]
+
+    def _rollout_single(self, leaf: TakState) -> float:
+        env = self.env.get_copy_at_state(leaf)
+        done, info = leaf.is_terminal()
+        state, reward = leaf, 0.0 if not done else self._compute_score_for_terminal_state(leaf, info)
+        while not done:
+            possible_actions = TakAction.get_possible_actions(state)
+            action = self.rollout_policy.select_action(state, possible_actions)
+            next_state, reward, done, info = env.step(action)
+            state = next_state
+        return abs(reward) * (1.0 if info['winning_player'] == self.player else -1.0)
+
+    def _rollout_parallel(self, leaf: TakState, threads: int = 10) -> List[float]:
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            futures = [executor.submit(self._rollout_single, leaf) for _ in range(self.rollout_runs)]
+            return [future.result() for future in futures]
 
     def _compute_score_for_terminal_state(self, state: TakState, info) -> float:
         current_player = state.current_player.other()
