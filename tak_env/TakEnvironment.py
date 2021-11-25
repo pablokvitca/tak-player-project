@@ -100,18 +100,25 @@ class TakEnvironment(Env):
 
         return next_state, reward, done, info
 
-    def compute_score(self, current_player: TakPlayer, winning_player: Optional[TakPlayer]) -> float:
+    def compute_score(
+            self,
+            current_player: TakPlayer,
+            winning_player: Optional[TakPlayer],
+            discount: Optional[bool] = None
+    ) -> float:
         """
         Computes the score of the given state. Assumes that the game is over.
         The score is computed for either player
 
         :param current_player: The player who is currently playing
         :param winning_player: The player who won the game
+        :param discount: Whether to discount the score or use default
         :return: The score of the ended game
         """
         if winning_player is None:
             return 0.0
-        return self.scoring_metric.score(self.state, current_player, winning_player, discount=self.scoring_discount)
+        discount = discount if discount is not None else self.scoring_discount
+        return self.scoring_metric.score(self.state, current_player, winning_player, discount=discount)
 
     def reset(self) -> TakState:
         """
@@ -245,7 +252,7 @@ class TakEnvironment(Env):
         else:
             return board_size > 4  # if weird board, just return True if the size is not too small
 
-    def get_env_at_state(self, leaf: TakState) -> 'TakEnvironment':
+    def get_copy_at_state(self, leaf: TakState) -> 'TakEnvironment':
         new_env = TakEnvironment(
             self.board_size,
             use_capstone=self.use_capstone,

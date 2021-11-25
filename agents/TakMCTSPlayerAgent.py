@@ -18,7 +18,6 @@ class MCTSPlayerKnowledgeGraph(object):
 
     def __init__(self, initial_state: TakState):
         self.g = Graph(directed=True)
-        self.g.add_vertices(1)
         self.initial_state_node_id = self._add_state(initial_state)
 
     def get_root(self) -> Tuple[TakState, float, int]:
@@ -64,7 +63,7 @@ class MCTSPlayerKnowledgeGraph(object):
     def get_state_value(self, state: Union[int, TakState]) -> float:
         state_node_id = state if isinstance(state, int) else self.state_node_id(state)
         if state_node_id is not None:
-            return self.g.vs[state_node_id]['sum_reward'] / self.g.vs[state_node_id]['visits']
+            return self.g.vs[state_node_id]['sum_reward'] / max(1, self.g.vs[state_node_id]['visits'])
         else:
             return 0.0
 
@@ -106,6 +105,7 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
 
     def select_action(self, state: TakState) -> TakAction:
         # SELECTION?
+        state = state.copy()
         root_node = self.graph.get_state_node(state)
         for i in range(self.mcts_iterations):
             # EXPANSION
@@ -118,7 +118,18 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
             self.backup(expansion_leaf_state, rewards)
         return self.get_best_action(root_node)
 
-    def get_best_action(self, root_node: Vertex) -> Optional[TakAction]:
+    def get_best_black_action(self, root_node: Vertex) -> Optional[TakAction]:
+        best_action_value = float('inf')
+        best_action = None
+        for out_edge in root_node.out_edges():
+            if out_edge['action']:
+                action_value = self.graph.get_state_value(out_edge.target)
+                if action_value < best_action_value:
+                    best_action_value = action_value
+                    best_action = out_edge['action']
+        return best_action
+
+    def get_best_white_action(self, root_node: Vertex) -> Optional[TakAction]:
         best_action_value = -float('inf')
         best_action = None
         for out_edge in root_node.out_edges():
@@ -127,6 +138,11 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
                 if action_value > best_action_value:
                     best_action_value = action_value
                     best_action = out_edge['action']
+        return best_action
+
+    def get_best_action(self, root_node: Vertex) -> Optional[TakAction]:
+        best_action = self.get_best_white_action(root_node) if self.player == TakPlayer.WHITE \
+            else self.get_best_black_action(root_node)
         if best_action is not None:
             return best_action
         possible_actions = TakAction.get_possible_actions(root_node['state'])
@@ -134,12 +150,12 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
 
     def expand(self, state: TakState) -> TakState:
         current_state, was_in_graph, depth = state, self.graph.state_in_graph(state), 0
-        while was_in_graph or depth < self.mcts_expansion_depth:
+        while not current_state.is_terminal()[0] and (was_in_graph or depth < self.mcts_expansion_depth):
             depth += 1  # Increment expanded depth
 
             # EXPLORE?
             if np.random.rand() < self.mcts_expansion_epsilon:
-                possible_actions = TakAction.get_possible_actions(state)
+                possible_actions = TakAction.get_possible_actions(current_state)
                 action = np.random.choice(possible_actions)
             else:  # Greedy
                 action = self.get_best_action(self.graph.get_state_node(current_state))
@@ -155,8 +171,9 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
         # TODO: parallelize
         rewards = [0] * self.rollout_runs
         for i in range(self.rollout_runs):
-            env = self.env.get_env_at_state(leaf)
-            state, reward, done, info = leaf, 0.0, False, {}
+            env = self.env.get_copy_at_state(leaf)
+            done, info = leaf.is_terminal()
+            state, reward = leaf, 0.0 if not done else self._compute_score_for_terminal_state(leaf, info)
             while not done:
                 possible_actions = TakAction.get_possible_actions(state)
                 action = self.rollout_policy.select_action(state, possible_actions)
@@ -164,6 +181,11 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
                 state = next_state
             rewards[i] = abs(reward) * (1.0 if info['winning_player'] == self.player else -1.0)
         return rewards
+
+    def _compute_score_for_terminal_state(self, state: TakState, info) -> float:
+        current_player = state.current_player.other()
+        winning_player = info["winning_player"]
+        return self.env.compute_score(current_player, winning_player, discount=True)
 
     def backup(self, expansion_end_state: TakState, rewards: List[float]) -> None:
         for reward in rewards:

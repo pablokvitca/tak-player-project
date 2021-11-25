@@ -16,12 +16,12 @@ from tak_env.TakState import TakState
 # rollout_runs = [1, 10, 25, 50, 100]
 # games = 100
 
-board_sizes = [3]
-mcts_expansion_depths = [3]
-mcts_expansion_epsilons = [0.5]
+board_sizes = [3, 4, 5]
+mcts_expansion_depths = [1, 3, 5]
+mcts_expansion_epsilons = [1.0]
 mcts_iterations = [3]
-rollout_runs = [10]
-games = 10
+rollout_runs = [1, 10, 100]
+games = 100
 
 trial_settings = []
 for board_size in board_sizes:
@@ -71,7 +71,7 @@ with open(path, "a") as results_file:
             # Init agents with no knowledge of the game
             game_knowledge_graph = MCTSPlayerKnowledgeGraph(env.reset())
             agent_white_player = TakMCTSPlayerAgent(
-                env.get_env_at_state(env.reset()),  # TODO: FIXME COPY ISN'T WORKING?
+                env.get_copy_at_state(env.reset()),
                 TakPlayer.WHITE,
                 game_knowledge_graph,
                 mcts_expansion_depth=mcts_expansion_depth,
@@ -80,7 +80,7 @@ with open(path, "a") as results_file:
                 rollout_runs=rollout_run
             )
             agent_black_player = TakMCTSPlayerAgent(
-                env.get_env_at_state(env.reset()),
+                env.get_copy_at_state(env.reset()),
                 TakPlayer.BLACK,
                 game_knowledge_graph,
                 mcts_expansion_depth=mcts_expansion_depth,
@@ -100,7 +100,8 @@ with open(path, "a") as results_file:
                 while not done:
                     # WHITE ACTION
                     action = agent_white_player.select_action(state.copy())
-                    state, reward, done, info = env.step(action)
+                    next_state, reward, done, info = env.step(action)
+                    state = next_state
                     steps += 1
                     if done:
                         final_reward_for_white_player = reward
@@ -109,7 +110,8 @@ with open(path, "a") as results_file:
 
                     # BLACK ACTION
                     action = agent_black_player.select_action(state.copy())
-                    state, reward, done, info = env.step(action)
+                    next_state, reward, done, info = env.step(action)
+                    state = next_state
                     steps += 1
                     if done:
                         final_reward_for_black_player = reward
