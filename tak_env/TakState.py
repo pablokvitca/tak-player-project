@@ -15,11 +15,11 @@ class TakState(object):
         - Which player's turn it is
     """
 
-    cache_state_is_terminal: Dict['TakState', Tuple[bool, Dict[str, Any]]] = {}
-
-    @classmethod
-    def wipe_cache(cls):
-        cls.cache_state_is_terminal = {}
+    # cache_state_is_terminal: Dict['TakState', Tuple[bool, Dict[str, Any]]] = {}
+    #
+    # @classmethod
+    # def wipe_cache(cls):
+    #     cls.cache_state_is_terminal = {}
 
     def __init__(self,
                  board_size: int,
@@ -45,8 +45,8 @@ class TakState(object):
         self.cache_is_terminal: Optional[bool] = None
         self.cache_is_terminal_info: Optional[Dict[str, Any]] = None
 
-        if self in TakState.cache_state_is_terminal:
-            self.cache_is_terminal, self.cache_is_terminal_info = TakState.cache_state_is_terminal[self]
+        # if self in TakState.cache_state_is_terminal:
+        #     self.cache_is_terminal, self.cache_is_terminal_info = TakState.cache_state_is_terminal[self]
 
     def first_action(self) -> bool:
         """

@@ -12,4 +12,4 @@ class TakPlayerAgent(object):
         self.policy = policy
 
     def select_action(self, state: TakState) -> TakAction:
-        return self.policy.select_action(TakAction.get_possible_actions(state))
+        return self.policy.select_action(state, TakAction.get_possible_actions(state))

@@ -14,11 +14,11 @@ class TakBoard(object):
     TODO: docs
     """
 
-    cache_has_path_for_player = {}
-
-    @classmethod
-    def wipe_cache(cls):
-        cls.cache_has_path_for_player = {}
+    # cache_has_path_for_player = {}
+    #
+    # @classmethod
+    # def wipe_cache(cls):
+    #     cls.cache_has_path_for_player = {}
 
     def __init__(self, board_size: int):
         self.board_size = board_size
@@ -304,13 +304,17 @@ class TakBoard(object):
         """
         Memo _has_path_for_player
         """
-        params = (self, player, only_low_road, only_high_road, only_straight_road)
-        if params not in self.__class__.cache_has_path_for_player:
-            self.__class__.cache_has_path_for_player[params] = self._has_path_for_player(
-                player,
-                only_low_road=only_low_road, only_high_road=only_high_road, only_straight_road=only_straight_road
-            )
-        return self.__class__.cache_has_path_for_player[params]
+        return self._has_path_for_player(
+            player,
+            only_low_road=only_low_road, only_high_road=only_high_road, only_straight_road=only_straight_road
+        )
+        # params = (self, player, only_low_road, only_high_road, only_straight_road)
+        # if params not in self.__class__.cache_has_path_for_player:
+        #     self.__class__.cache_has_path_for_player[params] = self._has_path_for_player(
+        #         player,
+        #         only_low_road=only_low_road, only_high_road=only_high_road, only_straight_road=only_straight_road
+        #     )
+        # return self.__class__.cache_has_path_for_player[params]
 
     def _has_path_for_player(
             self,
@@ -406,3 +410,7 @@ class TakBoard(object):
 
     def __hash__(self) -> int:
         return hash((self.board_size, tuple(tuple(stack for stack in row) for row in self.board)))
+
+    @staticmethod
+    def get_all_positions(board_size: int) -> List[Tuple[int, int]]:
+        return [(file, rank) for file in range(board_size) for rank in range(board_size)]

@@ -4,84 +4,24 @@ from typing import Optional, Tuple, Union, Set, List
 import numpy as np
 from igraph import Graph, Vertex
 
+from agents.TakMCTSPlayerAgent import MCTSPlayerKnowledgeGraph
 from agents.TakPlayerAgent import TakPlayerAgent
 from policies.Policy import Policy
 from policies.RandomPolicy import RandomPolicy
-from tak_env.TakAction import TakAction
+from policies.RandomPolicyEff import RandomPolicyEff
+from tak_env.TakAction import TakAction, TakActionPlace
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
 
 
-# NOTE: consider using only board as the elements of the MCTS graph
-
-class MCTSPlayerKnowledgeGraph(object):
-
-    def __init__(self, initial_state: TakState):
-        self.g = Graph(directed=True)
-        self.initial_state_node_id = self._add_state(initial_state)
-
-    def get_root(self) -> Tuple[TakState, float, int]:
-        return self.g.vs[self.initial_state_node_id]
-
-    def state_in_graph(self, state: TakState) -> bool:
-        return state in self.g.vs['state']
-
-    def state_node_id(self, state: TakState) -> Optional[int]:
-        return self.g.vs.find(state=state).index if self.state_in_graph(state) else None
-
-    def _add_state(self, state: TakState) -> int:
-        node = self.g.add_vertex(state=state, visits=0, sum_reward=0)
-        return node.index
-
-    def add_state(self, parent: Union[int, TakState], state: TakState, action: TakAction) -> int:
-        parent_node_id = parent if isinstance(parent, int) else self.state_node_id(parent)
-        state_node_id = self.state_node_id(state) or self._add_state(state)
-        self.g.add_edge(parent_node_id, state_node_id, action=action)
-        return state_node_id
-
-    def add_action_result(self, parent: TakState, action: TakAction) -> int:
-        return self.add_state(parent, action.take(parent, mutate=False), action)
-
-    def add_visit(self, state: Union[int, TakState], reward: float, backpropagate: bool = True) -> None:
-        state_node_id = state if isinstance(state, int) else self.state_node_id(state)
-        self.g.vs[state_node_id]['visits'] += 1
-        self.g.vs[state_node_id]['sum_reward'] += reward
-        if backpropagate:
-            self._backpropagate_visit(state_node_id, reward, set())
-
-    def _backpropagate_visit(self, state_id: int, reward: float, visited: Set[int]) -> None:
-        for edge_index in self.g.incident(state_id, mode='IN'):
-            parent_index = self.g.es[edge_index].source
-            if parent_index not in visited:
-                visited.add(parent_index)
-                self.add_visit(parent_index, reward, False)
-                self._backpropagate_visit(parent_index, reward, visited)
-
-    def get_state_node(self, state: TakState) -> Optional[Vertex]:
-        return self.g.vs.find(state=state) if self.state_in_graph(state) else None
-
-    def get_state_value(self, state: Union[int, TakState]) -> float:
-        state_node_id = state if isinstance(state, int) else self.state_node_id(state)
-        if state_node_id is not None:
-            return self.g.vs[state_node_id]['sum_reward'] / max(1, self.g.vs[state_node_id]['visits'])
-        else:
-            return 0.0
-
-    def total_nodes(self) -> int:
-        return len(self.g.vs)
-
-    def total_rollouts(self):
-        return sum(self.g.vs['visits'])
-
-
-class TakMCTSPlayerAgent(TakPlayerAgent):
+class TakMCTSPlayerAgent2(TakPlayerAgent):
 
     max_parallel_rollouts_threads: int = 16
 
     @classmethod
-    def default_rollout_policy(cls):
-        return RandomPolicy()
+    def default_rollout_policy(cls, board_size: int = 19) -> Policy:
+        return RandomPolicyEff(board_size)
 
     def __init__(
             self,
@@ -99,13 +39,19 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
         self.env: TakEnvironment = env
         self.player: TakPlayer = player
         self.graph: MCTSPlayerKnowledgeGraph = graph
-        self.rollout_policy: Policy = rollout_policy or TakMCTSPlayerAgent.default_rollout_policy()
+        self.rollout_policy: Policy = rollout_policy or TakMCTSPlayerAgent2.default_rollout_policy(env.board_size)
         self.mcts_expansion_depth: int = mcts_expansion_depth
         self.mcts_expansion_epsilon: float = mcts_expansion_epsilon
         self.mcts_iterations: int = mcts_iterations
         self.rollout_runs: int = rollout_runs
         self.parallel_rollouts: bool = parallel_rollouts if self.rollout_runs > 1 else False
         self.parallel_rollouts_threads = max(self.rollout_runs, self.__class__.max_parallel_rollouts_threads)
+
+        self.first_actions = {
+            TakPlayer.WHITE: TakAction.get_first_actions(self.env.board_size, TakPlayer.WHITE),
+            TakPlayer.BLACK: TakAction.get_first_actions(self.env.board_size, TakPlayer.BLACK)
+        }
+        self.all_actions = TakAction.get_all_actions(self.env.board_size)
 
     def select_action(self, state: TakState) -> TakAction:
         # SELECTION?
@@ -149,8 +95,8 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
             else self.get_best_black_action(root_node)
         if best_action is not None:
             return best_action
-        possible_actions = TakAction.get_possible_actions(root_node['state'])
-        return np.random.choice(possible_actions)
+        possible_actions, weights = self.get_actions_and_weights(root_node['state'])
+        return np.random.choice(possible_actions, p=weights)
 
     def expand(self, state: TakState) -> TakState:
         current_state, was_in_graph, depth = state, self.graph.state_in_graph(state), 0
@@ -159,8 +105,8 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
 
             # EXPLORE?
             if np.random.rand() < self.mcts_expansion_epsilon:
-                possible_actions = TakAction.get_possible_actions(current_state)
-                action = np.random.choice(possible_actions)
+                actions, weights = self.get_actions_and_weights(current_state)
+                action = np.random.choice(actions, p=weights)
             else:  # Greedy
                 action = self.get_best_action(self.graph.get_state_node(current_state))
 
@@ -202,4 +148,41 @@ class TakMCTSPlayerAgent(TakPlayerAgent):
         for reward in rewards:
             self.graph.add_visit(expansion_end_state, reward, backpropagate=True)
 
+    def get_actions_and_weights(
+            self,
+            current_state: TakState,
+            place_action_prob: float = 0.5
+    ) -> Tuple[List[TakAction], np.ndarray]:
+        actions = self.all_actions if not current_state.first_action() \
+            else self.first_actions[current_state.current_player]
 
+        weights = np.zeros(len(actions))
+        valid_place_actions, valid_move_actions = [], []
+        for i, action in enumerate(actions):
+            # is valid?
+            if action.is_valid(current_state):
+                if isinstance(action, TakActionPlace):
+                    valid_place_actions.append(i)
+                else:
+                    valid_move_actions.append(i)
+            else:
+                weights[i] = 0
+
+        if len(valid_move_actions) == 0:
+            place_action_prob = 1.0
+        if len(valid_place_actions) > 0:
+            single_place_action_prob = place_action_prob / len(valid_place_actions)
+            for i in valid_place_actions:
+                weights[i] = single_place_action_prob
+
+        if len(valid_place_actions) == 0:
+            place_action_prob = 0.0
+        if len(valid_move_actions) > 0:
+            single_move_action_prob = (1 - place_action_prob) / len(valid_move_actions)
+            for i in valid_move_actions:
+                weights[i] = single_move_action_prob
+
+        return actions, weights
+
+    def add_adv_action(self, state, action, next_state, _):
+        self.graph.add_state(state, next_state, action)

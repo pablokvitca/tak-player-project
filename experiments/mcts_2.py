@@ -3,6 +3,7 @@ from os.path import isfile
 from tqdm import tqdm, trange
 
 from agents.TakMCTSPlayerAgent import TakMCTSPlayerAgent, MCTSPlayerKnowledgeGraph
+from agents.TakMCTSPlayerAgent2 import TakMCTSPlayerAgent2
 from agents.TakPlannerPlayerAgent import TakPlannerPlayerAgent
 from tak_env.TakBoard import TakBoard
 from tak_env.TakEnvironment import TakEnvironment
@@ -16,11 +17,11 @@ from tak_env.TakState import TakState
 # rollout_runs = [1, 10, 25, 50, 100]
 # games = 100
 
-board_sizes = [3, 4, 5]
-mcts_expansion_depths = [1, 3, 5]
+board_sizes = [3]
+mcts_expansion_depths = [3]
 mcts_expansion_epsilons = [1.0]
-mcts_iterations = [3]
-rollout_runs = [1, 16, 64]
+mcts_iterations = [5]
+rollout_runs = [32]
 games = 100
 
 trial_settings = []
@@ -32,10 +33,10 @@ for board_size in board_sizes:
                     trial_settings.append((board_size, mcts_expansion_depth, mcts_expansion_e, mcts_iters, rollout_run))
 
 run_number = 1
-path = f"./results/mcts_run_{run_number}.csv"
+path = f"./results/mcts2_run_{run_number}.csv"
 while isfile(path):
     run_number += 1
-    path = f"./results/mcts_run_{run_number}.csv"
+    path = f"./results/mcts2_run_{run_number}.csv"
 
 with open(path, "w+") as results_file:
     results_file.writelines(",".join([
@@ -48,8 +49,8 @@ with open(path, "w+") as results_file:
         "steps",
         "reward_for_white_player",
         "reward_for_black_player",
-        "knowledge_graph_nodes",
-        "knowledge_graph_total_rollouts"
+        # "knowledge_graph_nodes",
+        # "knowledge_graph_total_rollouts"
     ]) + "\n")
 
 print(f"Will run {len(trial_settings)} configurations {games} times each.")
@@ -59,18 +60,17 @@ with open(path, "a") as results_file:
 
     last_board_size = 0
     for board_size, mcts_expansion_depth, mcts_expansion_e, mcts_iters, rollout_run in trial_settings:
-        print(f"Board: {board_size}; D={mcts_expansion_depth}, E={mcts_expansion_e}, I={mcts_iters}, R={rollout_run};")
-        if last_board_size != board_size:
-            # TakAction.wipe_cache()
-            TakState.wipe_cache()
-            TakBoard.wipe_cache()
-            last_board_size = board_size
+        # if last_board_size != board_size:
+        #     # TakAction.wipe_cache()
+        #     TakState.wipe_cache()
+        #     TakBoard.wipe_cache()
+        #     last_board_size = board_size
 
         # Init the environment
         with TakEnvironment(board_size=board_size) as env:
+            game_knowledge_graph=MCTSPlayerKnowledgeGraph(env.reset())
             # Init agents with no knowledge of the game
-            game_knowledge_graph = MCTSPlayerKnowledgeGraph(env.reset())
-            agent_white_player = TakMCTSPlayerAgent(
+            agent_white_player = TakMCTSPlayerAgent2(
                 env.get_copy_at_state(env.reset()),
                 TakPlayer.WHITE,
                 game_knowledge_graph,
@@ -79,7 +79,7 @@ with open(path, "a") as results_file:
                 mcts_iterations=mcts_iters,
                 rollout_runs=rollout_run
             )
-            agent_black_player = TakMCTSPlayerAgent(
+            agent_black_player = TakMCTSPlayerAgent2(
                 env.get_copy_at_state(env.reset()),
                 TakPlayer.BLACK,
                 game_knowledge_graph,
@@ -90,7 +90,10 @@ with open(path, "a") as results_file:
             )
 
             # Run the games
-            for trial in trange(games):
+            for trial in trange(
+                    games,
+                    desc=f"Board: {board_size}; D={mcts_expansion_depth}, E={mcts_expansion_e}, I={mcts_iters}, R={rollout_run};"
+            ):
                 # Init the game
                 final_reward_for_white_player, final_reward_for_black_player = 0, 0
                 done = False
@@ -129,8 +132,8 @@ with open(path, "a") as results_file:
                         str(steps),                                     # steps
                         str(int(final_reward_for_white_player)),        # reward_for_white_player
                         str(int(final_reward_for_black_player)),        # reward_for_black_player
-                        str(game_knowledge_graph.total_nodes()),        # knowledge_graph_nodes
-                        str(game_knowledge_graph.total_rollouts())      # knowledge_graph_total_rollouts
+                        # str(game_knowledge_graph.total_nodes()),        # knowledge_graph_nodes
+                        # str(game_knowledge_graph.total_rollouts())      # knowledge_graph_total_rollouts
                     ]) + "\n"])
             results_file.flush()
 

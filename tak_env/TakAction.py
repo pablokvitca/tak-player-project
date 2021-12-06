@@ -126,6 +126,31 @@ class TakAction(object):
 
         return place_actions + move_actions
 
+    @staticmethod
+    def get_all_first_actions(board_size: int, player: TakPlayer) -> List['TakAction']:
+        other = player.other()
+        flat_place = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_flat_piece_for_player(other))
+        return flat_place
+
+    @staticmethod
+    def get_all_actions(board_size: int) -> List['TakAction']:
+        player = TakPlayer.WHITE
+        w_flat_place = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_flat_piece_for_player(player))
+        w_stand_place = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_standing_piece_for_player(player))
+        w_capstone = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_capstone_piece_for_player(player))
+        player = TakPlayer.BLACK
+        b_flat_place = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_flat_piece_for_player(player))
+        b_stand_place = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_standing_piece_for_player(player))
+        b_capstone = TakActionPlace.get_all_place_actions(board_size, TakPiece.get_capstone_piece_for_player(player))
+
+        moves = TakActionMove.get_all_move_actions(board_size)
+
+        return w_flat_place + w_stand_place + w_capstone + b_flat_place + b_stand_place + b_capstone + moves
+
+    @staticmethod
+    def get_first_actions(board_size: int, player: TakPlayer) -> List['TakAction']:
+        return TakActionPlace.get_all_place_actions(board_size, TakPiece.get_flat_piece_for_player(player.other()))
+
 
 class TakActionPlace(TakAction):
 
@@ -218,6 +243,10 @@ class TakActionPlace(TakAction):
 
     def __hash__(self):
         return hash((self.position, self.piece))
+
+    @staticmethod
+    def get_all_place_actions(board_size: int, piece: TakPiece) -> List['TakAction']:
+        return [TakActionPlace(pos, piece) for pos in TakBoard.get_all_positions(board_size)]
 
 
 class TakActionMoveDir(Enum):
@@ -439,3 +468,16 @@ class TakActionMove(TakAction):
         :return:
         """
         return set(ordered_partitions(max_pickup_size))
+
+    @staticmethod
+    def get_all_move_actions(board_size: int) -> List['TakAction']:
+        max_pickup = board_size
+        positions = TakBoard.get_all_positions(board_size)
+        actions = []
+        for pick_up_n in range(1, max_pickup + 1):
+            drop_orders = TakActionMove.get_possible_drop_orders(pick_up_n)
+            for pos in positions:
+                for direction in TakActionMoveDir:
+                    actions += [TakActionMove(pos, direction, drop_order) for drop_order in drop_orders]
+        return actions
+
