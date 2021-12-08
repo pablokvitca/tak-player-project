@@ -1,1 +1,2 @@
-board_size,mcts_expansion_depth,mcts_expansion_epsilon,mcts_iterations,rollout_runs,trial_number,steps,reward_for_white_player,reward_for_black_player
+board_size,mcts_expansion_depth,mcts_expansion_epsilon,mcts_iterations,rollout_runs,starting_player,trial_number,steps,reward_for_white_player,reward_for_black_player
+3,3,1.0,5,32,white,0,11,10,0

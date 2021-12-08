@@ -3993,7 +3993,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "board_size"
+							"name": "board_size",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4001,7 +4002,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "use_capstone"
+							"name": "use_capstone",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4009,7 +4011,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "init_pieces"
+							"name": "init_pieces",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4017,7 +4020,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "init_player"
+							"name": "init_player",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4036,7 +4040,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "scoring_discount"
+							"name": "scoring_discount",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4044,7 +4049,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/sB1ncAAtU="
 							},
-							"name": "scoring_metric"
+							"name": "scoring_metric",
+							"type": ""
 						}
 					]
 				},
@@ -4178,7 +4184,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/zcjHdg42A="
 							},
-							"name": "board_size"
+							"name": "board_size",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4197,7 +4204,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/zcjHdg42A="
 							},
-							"name": "white_pieces_available"
+							"name": "white_pieces_available",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4205,7 +4213,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/zcjHdg42A="
 							},
-							"name": "black_pieces_available"
+							"name": "black_pieces_available",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4213,7 +4222,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/zcjHdg42A="
 							},
-							"name": "white_capstone_available"
+							"name": "white_capstone_available",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4273,7 +4283,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9K/95Wne9PLU="
 							},
-							"name": "board_size"
+							"name": "board_size",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -4350,7 +4361,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9LADoPHgktDE="
 							},
-							"name": "position"
+							"name": "position",
+							"type": ""
 						}
 					]
 				},
@@ -4492,7 +4504,8 @@
 							"_parent": {
 								"$ref": "AAAAAAF9LAWa2nnFZFQ="
 							},
-							"name": "direction"
+							"name": "direction",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
