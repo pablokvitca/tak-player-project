@@ -5,7 +5,7 @@ from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
 
 
-class TakPlayerAgent(object):
+class TakSARSAPlayerAgent(object):
 
     def __init__(self, player: TakPlayer, policy: Policy = RandomPolicy(), skip_possible_actions: bool = False):
         self.player = player

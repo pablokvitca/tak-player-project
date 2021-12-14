@@ -8,29 +8,32 @@ from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
 
 
-class RandomPolicyEff(Policy):
+class RandomPolicyEffTakeWinner(Policy):
 
-    def __init__(self, board_size: int):
+    def __init__(self, board_size: int, place_action_prob: float = 0.5):
         self.first_actions = {
             TakPlayer.WHITE: TakAction.get_first_actions(board_size, TakPlayer.WHITE),
             TakPlayer.BLACK: TakAction.get_first_actions(board_size, TakPlayer.BLACK)
         }
         self.all_actions = TakAction.get_all_actions(board_size)
+        self.place_action_prob = place_action_prob
 
-    def select_action(self, state: TakState, _: List[TakAction]) -> TakAction:
+    def select_action(self, state: TakState, _: List[TakAction] = None) -> TakAction:
         actions, weights = self.get_actions_and_weights(state)
         return np.random.choice(actions, p=weights)
 
     def get_actions_and_weights(
             self,
             current_state: TakState,
-            place_action_prob: float = 0.5
     ) -> Tuple[List[TakAction], np.ndarray]:
+        place_action_prob = self.place_action_prob
         actions = self.all_actions if not current_state.first_action() \
             else self.first_actions[current_state.current_player]
 
         weights = np.zeros(len(actions))
         valid_place_actions, valid_move_actions = [], []
+        winning_actions = []
+        losing_actions = []
         for i, action in enumerate(actions):
             # is valid?
             if action.is_valid(current_state):
@@ -38,8 +41,19 @@ class RandomPolicyEff(Policy):
                     valid_place_actions.append(i)
                 else:
                     valid_move_actions.append(i)
+                # is winning?
+                next_state = action.take(current_state, mutate=False)
+                if next_state.is_terminal():
+                    if next_state.winning_player() == current_state.current_player:
+                        winning_actions.append(action)
+                    else:
+                        losing_actions.append(action)
+                        weights[i] = 0
             else:
                 weights[i] = 0
+
+        if len(winning_actions) > 0:
+            return winning_actions, np.ones(len(winning_actions)) / len(winning_actions)
 
         if len(valid_move_actions) == 0:
             place_action_prob = 1.0

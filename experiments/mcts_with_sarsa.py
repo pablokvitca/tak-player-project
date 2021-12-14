@@ -5,6 +5,8 @@ from tqdm import tqdm, trange
 from agents.TakMCTSPlayerAgent import TakMCTSPlayerAgent, MCTSPlayerKnowledgeGraph
 from agents.TakMCTSPlayerAgent2 import TakMCTSPlayerAgent2
 from agents.TakPlannerPlayerAgent import TakPlannerPlayerAgent
+from policies.EGreedyPolicy import EGreedyPolicy
+from policies.RandomPolicyEffTakeWinner import RandomPolicyEffTakeWinner
 from tak_env.TakBoard import TakBoard
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
@@ -17,13 +19,24 @@ from tak_env.TakState import TakState
 # rollout_runs = [1, 10, 25, 50, 100]
 # games = 100
 
-board_sizes = [4]
+board_sizes = [3]
 mcts_expansion_depths = [3]
-mcts_expansion_epsilons = [1.0]
+mcts_expansion_epsilons = [0.9]
 mcts_iterations = [5]
 rollout_runs = [16]
-starting_players = [TakPlayer.WHITE, TakPlayer.BLACK]
-games = 100
+starting_players = [TakPlayer.WHITE]
+rollout_policies = ['random', 'random_take_win', 'egreedy-sarsa']
+games = 50
+
+
+def make_policy(board_size, policy_name):
+    if policy_name == 'egreedy-sarsa':
+        return EGreedyPolicy(board_size, 0.1, 0.99, 0.99)
+    elif policy_name == 'random':
+        return None
+    elif policy_name == 'random_take_win':
+        return RandomPolicyEffTakeWinner(board_size)
+
 
 trial_settings = []
 for board_size in board_sizes:
@@ -32,14 +45,16 @@ for board_size in board_sizes:
             for mcts_iters in mcts_iterations:
                 for rollout_run in rollout_runs:
                     for starting_player in starting_players:
-                        trial_settings.append((
-                            board_size,
-                            mcts_expansion_depth,
-                            mcts_expansion_e,
-                            mcts_iters,
-                            rollout_run,
-                            starting_player
-                        ))
+                        for rollout_policy in rollout_policies:
+                            trial_settings.append((
+                                board_size,
+                                mcts_expansion_depth,
+                                mcts_expansion_e,
+                                mcts_iters,
+                                rollout_run,
+                                starting_player,
+                                rollout_policy
+                            ))
 
 run_number = 1
 path = f"./results/mcts2_run_{run_number}.csv"
@@ -55,6 +70,7 @@ with open(path, "w+") as results_file:
         "mcts_iterations",
         "rollout_runs",
         "starting_player",
+        "rollout_policy",
         "trial_number",
         "steps",
         "reward_for_white_player",
@@ -69,7 +85,8 @@ print(f"Output file: {path}")
 with open(path, "a") as results_file:
 
     last_board_size = 0
-    for board_size, mcts_expansion_depth, mcts_expansion_e, mcts_iters, rollout_run, starting_player in trial_settings:
+    for board_size, mcts_expansion_depth, mcts_expansion_e, mcts_iters, rollout_run, starting_player, rollout_policy \
+        in trial_settings:
         # if last_board_size != board_size:
         #     # TakAction.wipe_cache()
         #     TakState.wipe_cache()
@@ -80,6 +97,7 @@ with open(path, "a") as results_file:
         with TakEnvironment(board_size=board_size, init_player=starting_player) as env:
             game_knowledge_graph = MCTSPlayerKnowledgeGraph(env.reset())
             # Init agents with no knowledge of the game
+            agent_white_policy = make_policy(board_size, rollout_policy)
             agent_white_player = TakMCTSPlayerAgent2(
                 env.get_copy_at_state(env.reset()),
                 TakPlayer.WHITE,
@@ -87,8 +105,10 @@ with open(path, "a") as results_file:
                 mcts_expansion_depth=mcts_expansion_depth,
                 mcts_expansion_epsilon=mcts_expansion_e,
                 mcts_iterations=mcts_iters,
-                rollout_runs=rollout_run
+                rollout_runs=rollout_run,
+                rollout_policy=EGreedyPolicy(board_size, 0.1, 0.99, 0.99)
             )
+            agent_white_policy = make_policy(board_size, rollout_policy)
             agent_black_player = TakMCTSPlayerAgent2(
                 env.get_copy_at_state(env.reset()),
                 TakPlayer.BLACK,
@@ -96,13 +116,14 @@ with open(path, "a") as results_file:
                 mcts_expansion_depth=mcts_expansion_depth,
                 mcts_expansion_epsilon=mcts_expansion_e,
                 mcts_iterations=mcts_iters,
-                rollout_runs=rollout_run
+                rollout_runs=rollout_run,
+                rollout_policy=EGreedyPolicy(board_size, 0.1, 0.99, 0.99)
             )
 
             # Run the games
             for trial in trange(
                     games,
-                    desc=f"Board: {board_size}; D={mcts_expansion_depth}, E={mcts_expansion_e}, I={mcts_iters}, R={rollout_run};"
+                    desc=f"Board: {board_size}; D={mcts_expansion_depth}, E={mcts_expansion_e}, I={mcts_iters}, R={rollout_run}, S={starting_player}, P={rollout_policy}"
             ):
                 # Init the game
                 final_reward_for_first_player, final_reward_for_second_player = 0, 0
@@ -133,7 +154,6 @@ with open(path, "a") as results_file:
                         final_reward_for_second_player = reward
                         white_won = reward < 0
                         break
-
 
                 final_reward_for_white_player = final_reward_for_first_player if starting_player == TakPlayer.WHITE else final_reward_for_second_player
                 final_reward_for_black_player = final_reward_for_second_player if starting_player == TakPlayer.WHITE else final_reward_for_first_player

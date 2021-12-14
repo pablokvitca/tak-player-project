@@ -2,12 +2,11 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple, Union, Set, List
 
 import numpy as np
-from igraph import Graph, Vertex
+from igraph import Vertex
 
 from agents.TakMCTSPlayerAgent import MCTSPlayerKnowledgeGraph
 from agents.TakPlayerAgent import TakPlayerAgent
-from policies.Policy import Policy
-from policies.RandomPolicy import RandomPolicy
+from policies.EGreedyPolicy import EGreedyPolicy
 from policies.RandomPolicyEff import RandomPolicyEff
 from tak_env.TakAction import TakAction, TakActionPlace
 from tak_env.TakEnvironment import TakEnvironment
@@ -20,7 +19,7 @@ class TakMCTSPlayerAgent2(TakPlayerAgent):
     max_parallel_rollouts_threads: int = 16
 
     @classmethod
-    def default_rollout_policy(cls, board_size: int = 19) -> Policy:
+    def default_rollout_policy(cls, board_size: int = 19) -> Union[RandomPolicyEff, EGreedyPolicy]:
         return RandomPolicyEff(board_size)
 
     def __init__(
@@ -28,7 +27,7 @@ class TakMCTSPlayerAgent2(TakPlayerAgent):
             env: TakEnvironment,
             player: TakPlayer,
             graph: MCTSPlayerKnowledgeGraph,
-            rollout_policy: Optional[Policy] = None,
+            rollout_policy: Union[RandomPolicyEff, EGreedyPolicy] = None,
             mcts_expansion_depth: int = 3,
             mcts_expansion_epsilon: float = 0.5,
             mcts_iterations: int = 10,
@@ -39,7 +38,8 @@ class TakMCTSPlayerAgent2(TakPlayerAgent):
         self.env: TakEnvironment = env
         self.player: TakPlayer = player
         self.graph: MCTSPlayerKnowledgeGraph = graph
-        self.rollout_policy: Policy = rollout_policy or TakMCTSPlayerAgent2.default_rollout_policy(env.board_size)
+        self.rollout_policy: Union[RandomPolicyEff, EGreedyPolicy] = \
+            rollout_policy or TakMCTSPlayerAgent2.default_rollout_policy(env.board_size)
         self.mcts_expansion_depth: int = mcts_expansion_depth
         self.mcts_expansion_epsilon: float = mcts_expansion_epsilon
         self.mcts_iterations: int = mcts_iterations
@@ -127,11 +127,26 @@ class TakMCTSPlayerAgent2(TakPlayerAgent):
         env = self.env.get_copy_at_state(leaf)
         done, info = leaf.is_terminal()
         state, reward = leaf, 0.0 if not done else self._compute_score_for_terminal_state(leaf, info)
+
+        prev_step_first: Optional[Tuple[TakState, TakAction, float]] = None
+        prev_step_second: Optional[Tuple[TakState, TakAction, float]] = None
+        on_first = True
         while not done:
-            possible_actions = TakAction.get_possible_actions(state)
-            action = self.rollout_policy.select_action(state, possible_actions)
+            action = self.rollout_policy.select_action(state)
+            prev_step = prev_step_first if on_first else prev_step_second
+            if prev_step is not None:  # update from prev step
+                prev_state, prev_action, prev_reward = prev_step
+                self.rollout_policy.update(prev_state, prev_action, prev_reward, state, action)
             next_state, reward, done, info = env.step(action)
+            if on_first:
+                prev_step_first = (state, action, reward)
+            else:
+                prev_step_second = (state, action, reward)
             state = next_state
+        prev_step = prev_step_first if on_first else prev_step_second
+        if prev_step is not None:  # update from prev step
+            prev_state, prev_action, prev_reward = prev_step
+            self.rollout_policy.update(prev_state, prev_action, prev_reward, state, action)
         return abs(reward) * (1.0 if info['winning_player'] == self.player else -1.0)
 
     def _rollout_parallel(self, leaf: TakState, threads: int = 10) -> List[float]:

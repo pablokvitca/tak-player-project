@@ -196,9 +196,7 @@ class TakState(object):
         has_pieces_left = self.pieces_left()
         has_spaces_left = self.spaces_left()
 
-        last_player_to_move = self.current_player.other()
-
-        winning_player = self.winning_player(last_player_to_move, has_path_for_white, has_path_for_black)
+        winning_player = self.winning_player(has_path_for_white, has_path_for_black)
 
         done = has_path or not has_pieces_left or not has_spaces_left
         if done:
@@ -210,16 +208,20 @@ class TakState(object):
                 }
         return done, {}
 
-    def winning_player(self, last_play_by: TakPlayer, has_path_for_white: bool, has_path_for_black: bool) \
+    def winning_player(self, has_path_for_white: bool = None, has_path_for_black: bool = None) \
             -> Optional[TakPlayer]:
         """
         Determines which player won the game. Assumes that the game is over.
 
-        :param last_play_by: The player who last played
         :param has_path_for_white: Whether white has a path
         :param has_path_for_black: Whether black has a path
         :return: The winning player
         """
+        last_play_by: TakPlayer = self.current_player.other()
+        if has_path_for_white is None:
+            has_path_for_white = self.board.has_path_for_player(TakPlayer.WHITE)
+        if has_path_for_black is None:
+            has_path_for_black = self.board.has_path_for_player(TakPlayer.BLACK)
 
         # Did the last player to play win?
         if last_play_by == TakPlayer.WHITE and has_path_for_white:

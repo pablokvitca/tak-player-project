@@ -30,13 +30,13 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         action = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
         self.assertFalse(action.is_valid(state))
         state = TakState(5, TakBoard(5), 11, 10, True, True, TakPlayer.WHITE)
-        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state)  # Current player is black
-        TakActionPlace((1, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is white
-        TakActionPlace((2, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is black
-        TakActionPlace((2, 3), TakPiece.BLACK_STANDING).take(state)  # Current player is white
-        TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE).take(state)  # Current player is black
-        TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE).take(state)  # Current player is white
-        TakActionPlace((3, 0), TakPiece.WHITE_STANDING).take(state)  # Current player is black
+        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state, mutate=True)  # Current player is black
+        TakActionPlace((1, 2), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is white
+        TakActionPlace((2, 2), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is black
+        TakActionPlace((2, 3), TakPiece.BLACK_STANDING).take(state, mutate=True)  # Current player is white
+        TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE).take(state, mutate=True)  # Current player is black
+        TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE).take(state, mutate=True)  # Current player is white
+        TakActionPlace((3, 0), TakPiece.WHITE_STANDING).take(state, mutate=True)  # Current player is black
 
         action = TakActionMove((2, 3), TakActionMoveDir.RIGHT, (1,))
         self.assertFalse(action.is_valid(state))
@@ -55,12 +55,12 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
 
         action = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
         self.assertTrue(action.is_valid(state))
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
 
         action = TakActionMove((3, 3), TakActionMoveDir.LEFT, (1,))
         self.assertTrue(action.is_valid(state))
 
-        TakActionPlace((4, 4), TakPiece.WHITE_STANDING).take(state)  # Current player is black
+        TakActionPlace((4, 4), TakPiece.WHITE_STANDING).take(state, mutate=True)  # Current player is black
 
         action = TakActionMove((0, 0), TakActionMoveDir.UP, (1, 1, 1))
         self.assertFalse(action.is_valid(state))
@@ -81,7 +81,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         action = TakActionMove((0, 0), TakActionMoveDir.UP, (1, 4, 1))
         self.assertFalse(action.is_valid(state))
 
-        TakActionPlace((0, 4), TakPiece.BLACK_FLAT).take(state)  # Current player is white
+        TakActionPlace((0, 4), TakPiece.BLACK_FLAT).take(state, mutate=True)  # Current player is white
         action = TakActionMove((4, 4), TakActionMoveDir.UP, (1,))
         self.assertFalse(action.is_valid(state))
         action = TakActionMove((4, 4), TakActionMoveDir.RIGHT, (1,))
@@ -96,35 +96,35 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
 
     def test_tak_action_move_take(self):
         state = TakState(5, TakBoard(5), 11, 10, False, False, TakPlayer.WHITE)  # Current player is white
-        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state)  # Current player is black
-        TakActionPlace((1, 1), TakPiece.WHITE_FLAT).take(state)  # Current player is white
+        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state, mutate=True)  # Current player is black
+        TakActionPlace((1, 1), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is white
         self.assertEqual(len(state.board.get_empty_positions()), 5 * 5 - 2)
         action = TakActionMove((1, 1), TakActionMoveDir.DOWN, (1,))
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         self.assertEqual(state.board.get_stack(1, 1).height(), 0)
         self.assertEqual(state.board.get_stack(0, 0).top(), TakPiece.BLACK_FLAT)
         self.assertEqual(state.board.get_stack(1, 0).top(), TakPiece.WHITE_FLAT)
         self.assertEqual(len(state.board.get_empty_positions()), 5 * 5 - 2)
         action = TakActionMove((0, 0), TakActionMoveDir.RIGHT, (1,))
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(0, 0).height(), 0)
         self.assertEqual(state.board.get_stack(1, 0).top(), TakPiece.BLACK_FLAT)
         self.assertEqual(state.board.get_stack(1, 0).top_n(2), [TakPiece.WHITE_FLAT, TakPiece.BLACK_FLAT])
         self.assertEqual(len(state.board.get_empty_positions()), 5 * 5 - 1)
 
         state = TakState(5, TakBoard(5), 11, 10, True, True, TakPlayer.WHITE)  # Current player is white
-        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state)  # Current player is black
-        TakActionPlace((1, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is white
-        TakActionPlace((2, 2), TakPiece.WHITE_FLAT).take(state)  # Current player is black
-        TakActionPlace((2, 3), TakPiece.BLACK_STANDING).take(state)  # Current player is white
-        TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE).take(state)  # Current player is black
-        TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE).take(state)  # Current player is white
-        TakActionPlace((3, 0), TakPiece.WHITE_STANDING).take(state)  # Current player is black
+        TakActionPlace((0, 0), TakPiece.BLACK_FLAT).take(state, mutate=True)  # Current player is black
+        TakActionPlace((1, 2), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is white
+        TakActionPlace((2, 2), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is black
+        TakActionPlace((2, 3), TakPiece.BLACK_STANDING).take(state, mutate=True)  # Current player is white
+        TakActionPlace((3, 3), TakPiece.WHITE_CAPSTONE).take(state, mutate=True)  # Current player is black
+        TakActionPlace((1, 1), TakPiece.BLACK_CAPSTONE).take(state, mutate=True)  # Current player is white
+        TakActionPlace((3, 0), TakPiece.WHITE_STANDING).take(state, mutate=True)  # Current player is black
 
         # test move single, no flattening, flat, to empty
         action = TakActionMove((0, 0), TakActionMoveDir.UP, (1,))
         self.assertEqual(str(action), "1a1↑1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(0, 0).height(), 0)
         self.assertEqual(state.board.get_stack(0, 1).height(), 1)
         self.assertEqual(state.board.get_stack(0, 1).top(), TakPiece.BLACK_FLAT)
@@ -132,7 +132,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move single, no flattening, standing, to empty
         action = TakActionMove((3, 0), TakActionMoveDir.LEFT, (1,))
         self.assertEqual(str(action), "1d1←1")
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         self.assertEqual(state.board.get_stack(3, 0).height(), 0)
         self.assertEqual(state.board.get_stack(2, 0).height(), 1)
         self.assertEqual(state.board.get_stack(2, 0).top(), TakPiece.WHITE_STANDING)
@@ -140,7 +140,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move single, no flattening, capstone, to empty
         action = TakActionMove((1, 1), TakActionMoveDir.RIGHT, (1,))
         self.assertEqual(str(action), "1b2→1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(1, 1).height(), 0)
         self.assertEqual(state.board.get_stack(2, 1).height(), 1)
         self.assertEqual(state.board.get_stack(2, 1).top(), TakPiece.BLACK_CAPSTONE)
@@ -148,7 +148,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move single, no flattening, flat, to flat
         action = TakActionMove((1, 2), TakActionMoveDir.RIGHT, (1,))
         self.assertEqual(str(action), "1b3→1")
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         self.assertEqual(state.board.get_stack(1, 2).height(), 0)
         self.assertEqual(state.board.get_stack(2, 2).height(), 2)
         self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.WHITE_FLAT)
@@ -157,7 +157,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move single, no flattening, standing, to flat h=2
         action = TakActionMove((2, 3), TakActionMoveDir.DOWN, (1,))
         self.assertEqual(str(action), "1c4↓1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(2, 3).height(), 0)
         self.assertEqual(state.board.get_stack(2, 2).height(), 3)
         self.assertEqual(state.board.get_stack(2, 2).top(), TakPiece.BLACK_STANDING)
@@ -165,30 +165,30 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
                          [TakPiece.WHITE_FLAT, TakPiece.WHITE_FLAT, TakPiece.BLACK_STANDING])
 
         # test move single, no flattening, capstone, to flat
-        TakActionPlace((1, 1), TakPiece.WHITE_FLAT).take(state)  # Current player is black
+        TakActionPlace((1, 1), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is black
         action = TakActionMove((2, 1), TakActionMoveDir.LEFT, (1,))
         self.assertEqual(str(action), "1c2←1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(2, 1).height(), 0)
         self.assertEqual(state.board.get_stack(1, 1).height(), 2)
         self.assertEqual(state.board.get_stack(1, 1).top(), TakPiece.BLACK_CAPSTONE)
         self.assertEqual(state.board.get_stack(1, 1).top_n(2), [TakPiece.WHITE_FLAT, TakPiece.BLACK_CAPSTONE])
 
         # test move multiple, no flattening, single drop, all empty
-        TakActionPlace((2, 3), TakPiece.WHITE_FLAT).take(state)  # Current player is black
+        TakActionPlace((2, 3), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is black
         action = TakActionMove((1, 1), TakActionMoveDir.UP, (2,))
         self.assertEqual(str(action), "2b2↑2")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(1, 1).height(), 0)
         self.assertEqual(state.board.get_stack(1, 2).height(), 2)
         self.assertEqual(state.board.get_stack(1, 2).top(), TakPiece.BLACK_CAPSTONE)
         self.assertEqual(state.board.get_stack(1, 2).top_n(2), [TakPiece.WHITE_FLAT, TakPiece.BLACK_CAPSTONE])
 
         # test move multiple, no flattening, multi drop, all empty
-        TakActionPlace((1, 3), TakPiece.WHITE_FLAT).take(state)  # Current player is black
+        TakActionPlace((1, 3), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is black
         action = TakActionMove((2, 2), TakActionMoveDir.RIGHT, (1, 2,))
         self.assertEqual(str(action), "3c3→12")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(2, 2).height(), 0)
         self.assertEqual(state.board.get_stack(3, 2).height(), 1)
         self.assertEqual(state.board.get_stack(4, 2).height(), 2)
@@ -198,7 +198,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move multiple, no flattening, multi drop, some empty some flat
         action = TakActionMove((1, 2), TakActionMoveDir.UP, (1, 1,))
         self.assertEqual(str(action), "2b3↑11")
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         self.assertEqual(state.board.get_stack(1, 2).height(), 0)
         self.assertEqual(state.board.get_stack(1, 3).height(), 2)
         self.assertEqual(state.board.get_stack(1, 4).height(), 1)
@@ -206,11 +206,11 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         self.assertEqual(state.board.get_stack(1, 4).top(), TakPiece.BLACK_CAPSTONE)
 
         # test move single, flattening
-        TakActionPlace((3, 1), TakPiece.WHITE_FLAT).take(state)  # Current player is white
-        TakActionPlace((4, 3), TakPiece.BLACK_STANDING).take(state)  # Current player is black
+        TakActionPlace((3, 1), TakPiece.WHITE_FLAT).take(state, mutate=True)  # Current player is white
+        TakActionPlace((4, 3), TakPiece.BLACK_STANDING).take(state, mutate=True)  # Current player is black
         action = TakActionMove((3, 3), TakActionMoveDir.RIGHT, (1,))
         self.assertEqual(str(action), "1d4→1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(3, 3).height(), 0)
         self.assertEqual(state.board.get_stack(4, 3).height(), 2)
         self.assertEqual(state.board.get_stack(4, 3).top_n(2), [TakPiece.BLACK_FLAT, TakPiece.WHITE_CAPSTONE])
@@ -218,13 +218,13 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move multiple, flattening, all empty but last standing
         action = TakActionMove((1, 4), TakActionMoveDir.DOWN, (1,))
         self.assertTrue(str(action), "1b5↓1")
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         action = TakActionMove((2, 0), TakActionMoveDir.LEFT, (1,))
         self.assertTrue(str(action), "1c1←1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         action = TakActionMove((1, 3), TakActionMoveDir.DOWN, (1, 1, 1))
         self.assertEqual(str(action), "3b4↓111")
-        action.take(state)  # Current player is black
+        action.take(state, mutate=True)  # Current player is black
         self.assertEqual(state.board.get_stack(1, 3).height(), 0)
         self.assertEqual(state.board.get_stack(1, 2).height(), 1)
         self.assertEqual(state.board.get_stack(1, 1).height(), 1)
@@ -237,7 +237,7 @@ class TestTakEnvTakActionMoveMethods(unittest.TestCase):
         # test move single from h>1
         action = TakActionMove((4, 3), TakActionMoveDir.LEFT, (1,))
         self.assertEqual(str(action), "1e4←1")
-        action.take(state)  # Current player is white
+        action.take(state, mutate=True)  # Current player is white
         self.assertEqual(state.board.get_stack(4, 3).height(), 1)
         self.assertEqual(state.board.get_stack(3, 3).height(), 1)
         self.assertEqual(state.board.get_stack(4, 3).top(), TakPiece.BLACK_FLAT)

@@ -52,8 +52,8 @@ class TestTakEnvTakStateMethods(unittest.TestCase):
         self.assertEqual(board.total_pieces(), 23)
         state = TakState(5, board, 16, 13, False, False, TakPlayer.WHITE)
 
-        self.assertFalse(state.has_path_for_player(TakPlayer.WHITE))
-        self.assertFalse(state.has_path_for_player(TakPlayer.BLACK))
+        self.assertFalse(state.board.has_path_for_player(TakPlayer.WHITE))
+        self.assertFalse(state.board.has_path_for_player(TakPlayer.BLACK))
 
 
 if __name__ == '__main__':

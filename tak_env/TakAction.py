@@ -26,7 +26,7 @@ class TakAction(object):
     def is_valid(self, state: TakState) -> bool:
         raise NotImplementedError("Method 'is_valid' not implemented")
 
-    def take(self, state: TakState, mutate: bool = True) -> TakState:
+    def take(self, state: TakState, mutate: bool = False) -> TakState:
         raise NotImplementedError("Method 'take' not implemented")
 
     def __eq__(self, other):
@@ -190,7 +190,7 @@ class TakActionPlace(TakAction):
         # Place action is valid
         return True
 
-    def take(self, state: TakState, mutate: bool = True) -> TakState:
+    def take(self, state: TakState, mutate: bool = False) -> TakState:
         """
         Takes this action on the given state and returns the state resulting from it.
         Assumes the action is valid.
@@ -346,7 +346,7 @@ class TakActionMove(TakAction):
         delta_x, delta_y = self.direction.get_delta(len(self.drop_order))
         return from_x + delta_x, from_y + delta_y
 
-    def take(self, state: TakState, mutate: bool = True) -> TakState:
+    def take(self, state: TakState, mutate: bool = False) -> TakState:
         """
         Takes this action on the given state and returns the state resulting from it.
         Assumes the action is valid.
