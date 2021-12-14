@@ -1,0 +1,4 @@
+board_size,mcts_expansion_depth,mcts_expansion_epsilon,mcts_iterations,rollout_runs,starting_player,sarsa_epsilon,sarsa_alpha,sarsa_gamma,trial_number,steps,reward_for_white_player,reward_for_black_player
+3,3,0.9,3,16,white,0.1,0.99,0.99,0,13,10,0
+3,3,0.9,3,16,white,0.1,0.99,0.99,1,12,0,0
+3,3,0.9,3,16,white,0.1,0.99,0.99,2,18,0,0

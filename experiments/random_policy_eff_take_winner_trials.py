@@ -1,12 +1,15 @@
 from os.path import isfile
 from tqdm import trange
 from agents.TakPlayerAgent import TakPlayerAgent
+from policies.RandomPolicyEff import RandomPolicyEff
 from policies.RandomPolicyEffTakeWinner import RandomPolicyEffTakeWinner
 from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 
-board_sizes = [3, 4, 5]
-starting_player = [TakPlayer.WHITE, TakPlayer.BLACK]
+# board_sizes = [3, 4, 5]
+# starting_player = [TakPlayer.WHITE, TakPlayer.BLACK]
+board_sizes = [5]
+starting_player = [TakPlayer.BLACK]
 games = 300
 
 trial_settings = []
@@ -15,15 +18,15 @@ for board_size in board_sizes:
         trial_settings.append((board_size, player))
 
 run_number = 1
-path = f"./results/random_eff_run_{run_number}.csv"
+path = f"./results/random_eff_run_takewin_{run_number}.csv"
 while isfile(path):
     run_number += 1
-    path = f"./results/random_eff_run_{run_number}.csv"
+    path = f"./results/random_eff_run_takewin_{run_number}.csv"
 
 with open(path, "w+") as results_file:
     results_file.writelines(",".join([
         "board_size",
-        "epsilon",
+        "starting_player",
         "trial_number",
         "steps",
         "reward_for_white_player",
@@ -68,7 +71,7 @@ with open(path, "a") as results_file:
                     state = next_state
                     steps += 1
                     if done:
-                        final_reward_for_white_player = reward
+                        final_reward_for_first_player = reward
                         white_won += 1 if reward > 0 else 0
                         break
 
@@ -78,7 +81,7 @@ with open(path, "a") as results_file:
                     state = next_state
                     steps += 1
                     if done:
-                        final_reward_for_black_player = reward
+                        final_reward_for_second_player = reward
                         white_won += 1 if reward < 0 else 0
                         break
 

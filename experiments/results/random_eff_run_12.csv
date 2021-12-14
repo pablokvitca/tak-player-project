@@ -1,4 +1,4 @@
-board_size,epsilon,trial_number,steps,reward_for_white_player,reward_for_black_player
+board_size,starting_player,trial_number,steps,reward_for_white_player,reward_for_black_player
 3,white,0,18,0,0
 3,white,1,21,0,0
 3,white,2,21,0,0

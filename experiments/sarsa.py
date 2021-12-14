@@ -13,9 +13,9 @@ board_sizes = [3]
 epsilons = [0.1]
 gammas = [0.99]
 alphas = [0.99]
-episodes_options = [1000]
-starting_player = [TakPlayer.WHITE]
-games = 10  # TODO: update
+episodes_options = [500, 1000]
+starting_players = [TakPlayer.WHITE]
+games = 30
 
 trial_settings = []
 for board_size in board_sizes:
@@ -23,7 +23,7 @@ for board_size in board_sizes:
         for gamma in gammas:
             for alpha in alphas:
                 for episodes in episodes_options:
-                    for starting_player in starting_player:
+                    for starting_player in starting_players:
                         trial_settings.append((board_size, eps, gamma, alpha, episodes, starting_player))
 
 run_number = 1
@@ -99,7 +99,7 @@ with open(path, "a") as results_file:
                             if prev_step_first is not None:  # update from prev step
                                 prev_state, prev_action, prev_reward = prev_step_first
                                 sarsa_policy.update(prev_state, prev_action, prev_reward, state, action)
-                            final_reward_for_white_player = reward
+                            final_reward_for_first_player = reward
                             white_won += 1 if reward > 0 else 0
                             break
 
@@ -116,7 +116,7 @@ with open(path, "a") as results_file:
                             if prev_step_second is not None:  # update from prev step
                                 prev_state, prev_action, prev_reward = prev_step_second
                                 sarsa_policy.update(prev_state, prev_action, prev_reward, state, action)
-                            final_reward_for_black_player = reward
+                            final_reward_for_second_player = reward
                             white_won += 1 if reward < 0 else 0
                             break
 

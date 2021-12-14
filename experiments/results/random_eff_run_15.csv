@@ -1,0 +1,5 @@
+board_size,starting_player,trial_number,steps,reward_for_white_player,reward_for_black_player
+3,white,0,11,0,0
+3,white,1,14,0,10
+3,white,2,28,0,10
+3,white,3,22,0,0

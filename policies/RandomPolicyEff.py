@@ -17,7 +17,7 @@ class RandomPolicyEff(Policy):
         }
         self.all_actions = TakAction.get_all_actions(board_size)
 
-    def select_action(self, state: TakState, _: List[TakAction]) -> TakAction:
+    def select_action(self, state: TakState, _: List[TakAction] = None) -> TakAction:
         actions, weights = self.get_actions_and_weights(state)
         return np.random.choice(actions, p=weights)
 

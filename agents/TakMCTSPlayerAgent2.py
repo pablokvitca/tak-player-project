@@ -132,7 +132,7 @@ class TakMCTSPlayerAgent2(TakPlayerAgent):
         prev_step_second: Optional[Tuple[TakState, TakAction, float]] = None
         on_first = True
         while not done:
-            action = self.rollout_policy.select_action(state)
+            action = self.rollout_policy.select_action(state, None)
             prev_step = prev_step_first if on_first else prev_step_second
             if prev_step is not None:  # update from prev step
                 prev_state, prev_action, prev_reward = prev_step

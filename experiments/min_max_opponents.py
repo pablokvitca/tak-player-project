@@ -6,7 +6,7 @@ from tak_env.TakEnvironment import TakEnvironment
 from tak_env.TakPlayer import TakPlayer
 from tak_env.TakState import TakState
 
-board_sizes = [3, 4, 5]
+board_sizes = [3]
 min_max_depths = [1, 2, 3, 4, 5]
 
 trials = 10

@@ -1,0 +1,1 @@
+board_size,mcts_expansion_depth,mcts_expansion_epsilon,mcts_iterations,rollout_runs,starting_player,rollout_policy,sarsa_epsilon,sarsa_alpha,sarsa_gamma,trial_number,steps,game_timereward_for_white_player,reward_for_black_player
